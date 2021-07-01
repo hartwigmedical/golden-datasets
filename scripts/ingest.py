@@ -12,11 +12,13 @@ def main():
     parser.add_argument("vcf", help="Path to SV vcf file")
     parser.add_argument("-samplename", help="Sample name if multisampleVCF")
     parser.add_argument("-outputfile", help="If dataframe should be saved to CSV, give output file path here")
+    parser.add_argument("-filter", action='store_true', help="Only keep PASS calls")
 
     args = parser.parse_args()
 
-    print("[INFO] ### Start ingesting files")
+    print("[INFO] ### Start ingesting SV files")
     print("[INFO] file: " + str(args.vcf))
+    print("[INFO] Use only pass calls?: " + str(args.filter))
     variants = []
 
     # Account for: .vcf, .vcf.gz, .tsv
@@ -32,12 +34,12 @@ def main():
     if hasattr(vcf_reader, 'metadata'):
         # Input file type is VCF. Start parsing.
         print("[INFO] File format: VCF file")
-        variants, nr_of_vars, nr_filtered = parse_sv_vcf.parse(vcf_reader, args.samplename)
+        variants, nr_of_vars, nr_filtered = parse_sv_vcf.parse(vcf_reader, args.filter, args.samplename)
 
     else:
         # Input file type is TSV. Start parsing.
         print("[INFO] File format: TSV file")
-        variants, nr_of_vars, nr_filtered = parse_sv_tsv.parse(vcf_reader)
+        variants, nr_of_vars, nr_filtered = parse_sv_tsv.parse(vcf_reader, args.filter)
 
     # Create dataframe from all variant data
     if variants:

@@ -1,7 +1,7 @@
 import sys
 import pandas as pd
 
-def parse(vcf_reader):
+def parse(vcf_reader, filter):
     variants = []
     nr_of_vars = 0
     nr_filtered = 0
@@ -36,26 +36,27 @@ def parse(vcf_reader):
         nr_of_vars += 1
         
         # FILTERING (Option to separate this in a different function)
-        # BSC support
-        if 'CHR1' in header: 
-            if line[header.index('FILTER')] != "PASS":
-                #print("[DEBUG] Found filter: " + str(line[header.index('CUSTOM_FILTER')]))
-                nr_filtered += 1
-                continue
-            # Maybe we could recover these discarded variants in another dataframe for checking purposes
-            '''
-            # Filter out variants that do not get called by min_nr_progs
-            if int(line[header.index('NPROGS')]) < min_nr_progs:
-                nr_filtered += 1
-                continue
-            '''
-        # Charite support
-        elif '#chrom1' in header: # Charite does not have FILTER column so it does not apply. We need to ask them.
-            pass 
-        # COLO829 truth file (no need to filter)
-        elif "new_id" in header:
-            pass
-    
+        if filter:
+            # BSC support
+            if 'CHR1' in header:
+                if line[header.index('FILTER')] != "PASS":
+                    #print("[DEBUG] Found filter: " + str(line[header.index('CUSTOM_FILTER')]))
+                    nr_filtered += 1
+                    continue
+                # Maybe we could recover these discarded variants in another dataframe for checking purposes
+                '''
+                # Filter out variants that do not get called by min_nr_progs
+                if int(line[header.index('NPROGS')]) < min_nr_progs:
+                    nr_filtered += 1
+                    continue
+                '''
+            # Charite support
+            elif '#chrom1' in header: # Charite does not have FILTER column so it does not apply. We need to ask them.
+                pass
+            # COLO829 truth file (no need to filter)
+            elif "new_id" in header:
+                pass
+
     
         # FIND VARIANT INFO (option to separate in a different function)
         # BSC TSV support

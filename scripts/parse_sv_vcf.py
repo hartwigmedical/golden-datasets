@@ -1,6 +1,6 @@
 import sys
 
-def parse(vcf_reader, samplename):
+def parse(vcf_reader, filter, samplename):
     variants = []
     sample = None
     nr_of_vars = 0
@@ -24,7 +24,7 @@ def parse(vcf_reader, samplename):
     for record in vcf_reader:
         nr_of_vars += 1
         # Only use 'PASS' calls
-        if record.FILTER:
+        if filter and record.FILTER:
 
             # If we want to keep vars with certain filters, list here
             if record.FILTER != ['INFERRED']:
