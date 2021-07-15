@@ -113,8 +113,9 @@ def parse(vcf_reader, filter, samplename):
                 sv_type = record.var_subtype
 
 
-        elif record.is_snv:
-            sys.exit("[DEBUG] SNV in SV file.")
+        elif not record.is_sv:
+            print("[DEBUG] Entry that is not an SV in file:")
+            print("[DEBUG] " + str(record))
 
 
         # Convert into table with: start_chrom, start, end_chrom, end, ref, alt, length, sv_type, genotype
