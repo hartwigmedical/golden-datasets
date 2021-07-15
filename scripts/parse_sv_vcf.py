@@ -116,6 +116,7 @@ def parse(vcf_reader, filter, samplename):
         elif not record.is_sv:
             print("[DEBUG] Entry that is not an SV in file:")
             print("[DEBUG] " + str(record))
+            continue
 
 
         # Convert into table with: start_chrom, start, end_chrom, end, ref, alt, length, sv_type, genotype
