@@ -80,6 +80,8 @@ fi
 mkdir -p $OUTPUT_DIR/$OUT_NAME
 OUTPUT_DIR=$OUTPUT_DIR/$OUT_NAME
 
+# Source correct Conda env
+source ~/miniconda3/etc/profile.d/conda.sh
 
 # Load conda env:
 #conda env create -n eucancan -f golden-datasets/scripts/environment_snv.yml
