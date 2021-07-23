@@ -84,8 +84,9 @@ OUTPUT_DIR=$OUTPUT_DIR/$OUT_NAME
 # Load conda env:
 #conda env create -n eucancan -f golden-datasets/scripts/environment_snv.yml
 
-#conda activate eucancan
-source activate eucancan
+
+conda activate eucancan
+#source activate eucancan
 # If SNV and INDEL in two files
 
 if [[ ! -z "$snv" && ! -z "$indel" ]]; then
@@ -221,8 +222,8 @@ fi
 
 #conda env create -n eucancan_sv -f ~/golden-datasets/scripts/environment_sv.yml
 
-#conda activate eucancan_sv
-source activate eucancan_sv
+conda activate eucancan_sv
+#source activate eucancan_sv
 
 echo -e "[Running Information]: Running SV ingest.py script \n"
 sv_dataframe=$OUTPUT_DIR/"sv_dataframe.csv"
