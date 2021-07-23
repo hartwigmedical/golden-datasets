@@ -22,7 +22,7 @@ while [ $# -gt 0 ] ; do
       -c | --cpu) CPU="$2";;
       -k | --keep) KEEP=true;;
       -h | --help)  echo "Usage:"
-          echo "bash ingest_snv.sh -t, --truth truth_file.vcf"
+          echo "bash ingest_snv.sh -t, --truth truth_snv_file.vcf"
           echo "                   -s, --snv snv.vcf"
           echo "                   -i, --indel indel.vcf"
           echo "                   -m, --snvindel indels_and_vcfs.vcf"
@@ -79,6 +79,7 @@ fi
 
 mkdir -p $OUTPUT_DIR/$OUT_NAME
 OUTPUT_DIR=$OUTPUT_DIR/$OUT_NAME
+
 
 # Load conda env:
 #conda env create -n eucancan -f golden-datasets/scripts/environment_snv.yml
@@ -217,6 +218,9 @@ fi
 
 # Running SV ingestion script:
 # todo: use PASS toggle in this script as well
+
+#conda env create -n eucancan_sv -f ~/golden-datasets/scripts/environment_sv.yml
+
 conda activate eucancan_sv
 #conda activate eucancan
 #source activate ingestion
