@@ -219,7 +219,20 @@ if [[ `bcftools query -l $sv | wc -l` -gt 1  && -z "$SV_SAMPLE_NAME" ]]; then
   SV_SAMPLE_NAME=$SAMPLE_NAME
 fi
 
-# Running SV ingestion script:
+snvindel=$OUTPUT_DIR/"snv_indel.pass.sort.prep.norm.filtered.vcf"
+truth=$OUTPUT_DIR/"truth_temp.sort.prep.norm.filtered.vcf"
+
+# Running som.py:
+#conda activate eucancan_sv
+#source activate eucancan
+echo -e "[Running Information]: Running som.py evaluation script\n"
+
+som.py $truth $snvindel -o $OUTPUT_DIR/$OUT_NAME --verbose -N
+
+echo -e "[Running Information]: script ended successfully\n"
+conda deactivate
+
+# Running SV part script:
 # todo: use PASS toggle in this script as well
 
 #conda env create -n eucancan_sv -f ~/golden-datasets/scripts/environment_sv.yml
@@ -238,24 +251,6 @@ if [[ -z "$SV_SAMPLE_NAME" ]]; then
 else
   python $DIR/ingest.py $truth_sv -samplename $SV_SAMPLE_NAME -outputfile $truth_sv_dataframe
 fi
-
-snvindel=$OUTPUT_DIR/"snv_indel.pass.sort.prep.norm.filtered.vcf"
-truth=$OUTPUT_DIR/"truth_temp.sort.prep.norm.filtered.vcf"
-
-# Running som.py:
-#conda activate eucancan_sv
-#source activate eucancan
-echo -e "[Running Information]: Running som.py evaluation script\n"
-
-som.py $truth $snvindel -o $OUTPUT_DIR/$OUT_NAME --verbose -N
-
-echo -e "[Running Information]: script ended successfully\n"
-conda deactivate
-
-# Running SV benchmark:
-#conda activate eucancan_sv
-#conda activate eucancan
-source activate ingestion
 
 echo -e "[Running Information]: Running compare_node_to_truth.py script\n"
 metrics=$OUTPUT_DIR/"SV_benchmark_results.csv"
