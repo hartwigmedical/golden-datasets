@@ -134,23 +134,23 @@ fi
 echo -e "[Running Information]: checking if vcf is multisample\n"
 
 # todo: check if the truth file is multisample or not!
-if [[ `bcftools query -l $snvindel |wc -l` -gt 1  && -z "$SAMPLE_NAME" ]]; then
+if [[ `bcftools query -l $snvindel | wc -l` -gt 1]]; then
     echo "[ERROR]" $snvindel "is a multisample"
     echo "[ERROR] sample name must be specified in -n parameter"
     exit
-elif [[ `bcftools query -l $snvindel |wc -l` -gt 1  && ! -z "$SAMPLE_NAME" ]]; then
+elif [[ `bcftools query -l $snvindel | wc -l` -gt 1  && ! -z "$SAMPLE_NAME" ]]; then
     echo $SAMPLE_NAME
     bcftools view -c1 -O z -s $SAMPLE_NAME -o $OUTPUT_DIR/snv_indel_temp.sample.vcf.gz $snvindel --threads $CPU
     snvindel=$OUTPUT_DIR/snv_indel_temp.sample.vcf.gz
 fi
 
-if [[ `bcftools query -l $truth |wc -l` -gt 1  && -z "$SAMPLE_NAME" ]]; then
+if [[ `bcftools query -l $truth | wc -l` -gt 1 ]]; then
     echo "[ERROR]" $truth "is a multisample"
-    echo "[ERROR] sample name must be specified in -b parameter if different from the sample name in the test file"
+    echo "[ERROR] sample name must be specified in -b parameter"
     exit
-elif [[ `bcftools query -l $truth |wc -l` -gt 1  && ! -z "$SAMPLE_NAME" ]]; then
-    echo $SAMPLE_NAME
-    bcftools view -c1 -O z -s $SAMPLE_NAME -o $OUTPUT_DIR/truth_temp.sample.vcf.gz $truth --threads $CPU
+elif [[ `bcftools query -l $truth | wc -l` -gt 1  && ! -z "$SNV_SAMPLE_NAME" ]]; then
+    echo $SNV_SAMPLE_NAME
+    bcftools view -c1 -O z -s $SNV_SAMPLE_NAME -o $OUTPUT_DIR/truth_temp.sample.vcf.gz $truth --threads $CPU
     truth=$OUTPUT_DIR/truth_temp.sample.vcf.gz
 fi
 
