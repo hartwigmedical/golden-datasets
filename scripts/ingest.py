@@ -102,8 +102,6 @@ def main():
     else:
         sys.exit("No data parsed, please check your input data.")
 
-    # Todo: what about fusions?
-
     print("Total number of variants processed: " + str(nr_of_vars))
     print("Filtered variants of total: " + str(nr_filtered))
 

@@ -242,7 +242,6 @@ echo -e "[Running Information]: script ended successfully\n"
 conda deactivate
 
 # Running SV part script:
-# todo: use PASS toggle in this script as well
 
 #conda env create -n eucancan_sv -f ~/golden-datasets/scripts/environment_sv.yml
 
