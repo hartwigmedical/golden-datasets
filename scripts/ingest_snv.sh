@@ -22,7 +22,7 @@ while [ $# -gt 0 ] ; do
       -c | --cpu) CPU="$2";;
       -k | --keep) KEEP=true;;
       -h | --help)  echo "Usage:"
-          echo "bash ingest_snv.sh -t, --truth truth_file.vcf"
+          echo "bash ingest_snv.sh -t, --truth truth_snv_file.vcf"
           echo "                   -s, --snv snv.vcf"
           echo "                   -i, --indel indel.vcf"
           echo "                   -m, --snvindel indels_and_vcfs.vcf"
@@ -80,11 +80,15 @@ fi
 mkdir -p $OUTPUT_DIR/$OUT_NAME
 OUTPUT_DIR=$OUTPUT_DIR/$OUT_NAME
 
+# Source correct Conda env
+source ~/miniconda3/etc/profile.d/conda.sh
+
 # Load conda env:
 #conda env create -n eucancan -f golden-datasets/scripts/environment_snv.yml
 
-source activate eucancan
 
+conda activate eucancan
+#source activate eucancan
 # If SNV and INDEL in two files
 
 if [[ ! -z "$snv" && ! -z "$indel" ]]; then
@@ -215,9 +219,27 @@ if [[ `bcftools query -l $sv | wc -l` -gt 1  && -z "$SV_SAMPLE_NAME" ]]; then
   SV_SAMPLE_NAME=$SAMPLE_NAME
 fi
 
-# Running SV ingestion script:
+snvindel=$OUTPUT_DIR/"snv_indel.pass.sort.prep.norm.filtered.vcf"
+truth=$OUTPUT_DIR/"truth_temp.sort.prep.norm.filtered.vcf"
+
+# Running som.py:
+#conda activate eucancan_sv
+#source activate eucancan
+echo -e "[Running Information]: Running som.py evaluation script\n"
+
+som.py $truth $snvindel -o $OUTPUT_DIR/$OUT_NAME --verbose -N
+
+echo -e "[Running Information]: script ended successfully\n"
+conda deactivate
+
+# Running SV part script:
 # todo: use PASS toggle in this script as well
+
+#conda env create -n eucancan_sv -f ~/golden-datasets/scripts/environment_sv.yml
+
 conda activate eucancan_sv
+#source activate eucancan_sv
+
 echo -e "[Running Information]: Running SV ingest.py script \n"
 sv_dataframe=$OUTPUT_DIR/"sv_dataframe.csv"
 truth_sv_dataframe=$OUTPUT_DIR/"truth_sv_dataframe.csv"
@@ -230,23 +252,24 @@ else
   python $DIR/ingest.py $truth_sv -samplename $SV_SAMPLE_NAME -outputfile $truth_sv_dataframe
 fi
 
-conda deactivate
-snvindel=$OUTPUT_DIR/"snv_indel.pass.sort.prep.norm.filtered.vcf"
-truth=$OUTPUT_DIR/"truth_temp.sort.prep.norm.filtered.vcf"
-
-# Running som.py:
-echo -e "[Running Information]: Running som.py evaluation script\n"
-
-som.py $truth $snvindel -o $OUTPUT_DIR/$OUT_NAME --verbose -N
-
-echo -e "[Running Information]: script ended successfully\n"
-
-# Running SV benchmark:
-conda activate eucancan_sv
 echo -e "[Running Information]: Running compare_node_to_truth.py script\n"
 metrics=$OUTPUT_DIR/"SV_benchmark_results.csv"
 
 python $DIR/compare_node_to_truth.py $sv_dataframe $truth_sv_dataframe -metrics $metrics
+
+conda deactivate
+
+# Ploting with R
+## SNVs
+
+conda activate benchmarking_plots
+#source activate benchmarking_plots
+
+echo -e "[Running Information]: Running plots_benchmarking_snv.R script\n"
+Rscript $DIR/plots_benchmarking_snv.R -b $OUTPUT_DIR/$OUT_NAME".stats.csv" -o $OUTPUT_DIR/$OUT_NAME
+
+echo -e "[Running Information]: Running plots_benchmarking_SV.R script\n"
+Rscript $DIR/plots_benchmarking_SV.R -b $OUTPUT_DIR/"SV_benchmark_results.csv" -t $truth_sv -o $OUTPUT_DIR/$OUT_NAME
 
 conda deactivate
 

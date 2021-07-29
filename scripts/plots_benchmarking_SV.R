@@ -90,7 +90,7 @@ print(svTable,row.names = FALSE)
 # Transform svTable and extract only useful info
 tidySV=svTable %>% 
   filter(Bin != "All" & TIER == "tier3") %>% 
-  select(Bin,Center,starts_with("TP") & !c("TP")) %>% 
+  select(Bin,Center,starts_with("TP")& -"TP") %>% 
   mutate(Bin = case_when(Bin == "NaN" ~ "NaN",
                          Bin == "0-50" ~ "0-50",
                          Bin == "50-200" ~ "50-200",
@@ -100,11 +100,15 @@ tidySV=svTable %>%
 
 colnames(tidySV)=c("Bin","Center","DEL","INS","DUP","INV","BND")
 
+print("truth")
+print(truthTsv)
 # Transform Truth Table
 truthTsv= truthTsv %>% 
   select(new_id,type,size) %>% 
   mutate(bin = cut(truthTsv$size,c(0,1,50,200,1000,1000000000),include.lowest = TRUE))
 
+print("truth")
+print(truthTsv)
 # Count the number of TP of each category and put everything together
 SV_count=t(table(truthTsv$type,truthTsv$bin))
 SV_count = as.data.frame.matrix(SV_count) %>% 
