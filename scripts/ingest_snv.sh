@@ -144,6 +144,16 @@ elif [[ `bcftools query -l $snvindel |wc -l` -gt 1  && ! -z "$SAMPLE_NAME" ]]; t
     snvindel=$OUTPUT_DIR/snv_indel_temp.sample.vcf.gz
 fi
 
+if [[ `bcftools query -l $truth |wc -l` -gt 1  && -z "$SAMPLE_NAME" ]]; then
+    echo "[ERROR]" $truth "is a multisample"
+    echo "[ERROR] sample name must be specified in -b parameter if different from the sample name in the test file"
+    exit
+elif [[ `bcftools query -l $truth |wc -l` -gt 1  && ! -z "$SAMPLE_NAME" ]]; then
+    echo $SAMPLE_NAME
+    bcftools view -c1 -O z -s $SAMPLE_NAME -o $OUTPUT_DIR/truth_temp.sample.vcf.gz $truth --threads $CPU
+    truth=$OUTPUT_DIR/truth_temp.sample.vcf.gz
+fi
+
 ## Replace the 'chr' with '' in the VCFs
 
 echo -e "[Running Information]: replacing "" by "chr"\n"
