@@ -133,7 +133,6 @@ fi
 
 echo -e "[Running Information]: checking if vcf is multisample\n"
 
-# todo: check if the truth file is multisample or not!
 if [[ `bcftools query -l $snvindel | wc -l` -gt 1]]; then
     echo "[ERROR]" $snvindel "is a multisample"
     echo "[ERROR] sample name must be specified in -n parameter"
@@ -254,12 +253,12 @@ echo -e "[Running Information]: Running SV ingest.py script \n"
 sv_dataframe=$OUTPUT_DIR/"sv_dataframe.csv"
 truth_sv_dataframe=$OUTPUT_DIR/"truth_sv_dataframe.csv"
 
-python $DIR/ingest.py $sv -samplename $SAMPLE_NAME -outputfile $sv_dataframe
+python $DIR/ingest.py $sv -samplename $SAMPLE_NAME -outputfile $sv_dataframe -filter
 
 if [[ -z "$SV_SAMPLE_NAME" ]]; then
-  python $DIR/ingest.py $truth_sv -outputfile $truth_sv_dataframe
+  python $DIR/ingest.py $truth_sv -outputfile $truth_sv_dataframe -filter
 else
-  python $DIR/ingest.py $truth_sv -samplename $SV_SAMPLE_NAME -outputfile $truth_sv_dataframe
+  python $DIR/ingest.py $truth_sv -samplename $SV_SAMPLE_NAME -outputfile $truth_sv_dataframe -filter
 fi
 
 echo -e "[Running Information]: Running compare_node_to_truth.py script\n"
