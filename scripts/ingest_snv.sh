@@ -133,6 +133,8 @@ fi
 
 echo -e "[Running Information]: checking if vcf is multisample\n"
 
+#TODO : issue with the if statement: remove if and only keep elseif ?
+
 if [[ `bcftools query -l $snvindel | wc -l` -gt 1]]; then
     echo "[ERROR]" $snvindel "is a multisample"
     echo "[ERROR] sample name must be specified in -n parameter"
