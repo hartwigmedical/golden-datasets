@@ -130,7 +130,7 @@ def parse(vcf_reader, filter):
                     second_bracket = line[header.index('ALT')][first_bracket+1:].find(']')
                 second_bracket += first_bracket + 1
 
-               new_string = line[header.index('ALT')][first_bracket+1:second_bracket]
+                new_string = line[header.index('ALT')][first_bracket+1:second_bracket]
 
                 if first_bracket == 0:
                     strand1 = "-"
