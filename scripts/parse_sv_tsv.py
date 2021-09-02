@@ -18,7 +18,7 @@ def parse(vcf_reader, filter):
                 ref_version = "\t".join(line)
                 
             # Parse in header line for BSC, Charite, Truth file tsv
-            if line[0] in ["CHR1", "#chrom1", "new_id"]:
+            if line[0] in ["CHR1", "#chrom1", "new_id", "#CHROM"]:
                 header = line
                 print("[INFO] Header of TSV file found.")
                 #print(header)
