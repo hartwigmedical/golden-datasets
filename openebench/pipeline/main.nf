@@ -79,7 +79,7 @@ other_dir = file(params.otherdir)
 process validation {
 
 	// validExitStatus 0,1
-	tag "Validating input file format"
+	tag "Validating and normalising input file format"
 
 	input:
 	file input_file

@@ -22,7 +22,7 @@ while [ $# -gt 0 ] ; do
       -c | --cpu) CPU="$2";;
       -k | --keep) KEEP=true;;
       -h | --help)  echo "Usage:"
-          echo "bash ingest_snv.sh -t, --truth truth_file.vcf"
+          echo "bash ingest_snv.sh -t, --truth truth_snv_file.vcf"
           echo "                   -s, --snv snv.vcf"
           echo "                   -i, --indel indel.vcf"
           echo "                   -m, --snvindel indels_and_vcfs.vcf"
@@ -80,8 +80,12 @@ fi
 mkdir -p $OUTPUT_DIR/$OUT_NAME
 OUTPUT_DIR=$OUTPUT_DIR/$OUT_NAME
 
+# Source correct Conda env
+source ~/miniconda3/etc/profile.d/conda.sh
+
 # Load conda env:
 #conda env create -n eucancan -f golden-datasets/scripts/environment_snv.yml
+
 
 conda activate eucancan
 #source activate eucancan
@@ -129,15 +133,26 @@ fi
 
 echo -e "[Running Information]: checking if vcf is multisample\n"
 
-# todo: check if the truth file is multisample or not!
-if [[ `bcftools query -l $snvindel |wc -l` -gt 1  && -z "$SAMPLE_NAME" ]]; then
+#TODO : issue with the if statement: remove if and only keep elseif ?
+
+if [[ `bcftools query -l $snvindel | wc -l` -gt 1]]; then
     echo "[ERROR]" $snvindel "is a multisample"
     echo "[ERROR] sample name must be specified in -n parameter"
     exit
-elif [[ `bcftools query -l $snvindel |wc -l` -gt 1  && ! -z "$SAMPLE_NAME" ]]; then
+elif [[ `bcftools query -l $snvindel | wc -l` -gt 1  && ! -z "$SAMPLE_NAME" ]]; then
     echo $SAMPLE_NAME
     bcftools view -c1 -O z -s $SAMPLE_NAME -o $OUTPUT_DIR/snv_indel_temp.sample.vcf.gz $snvindel --threads $CPU
     snvindel=$OUTPUT_DIR/snv_indel_temp.sample.vcf.gz
+fi
+
+if [[ `bcftools query -l $truth | wc -l` -gt 1 ]]; then
+    echo "[ERROR]" $truth "is a multisample"
+    echo "[ERROR] sample name must be specified in -b parameter"
+    exit
+elif [[ `bcftools query -l $truth | wc -l` -gt 1  && ! -z "$SNV_SAMPLE_NAME" ]]; then
+    echo $SNV_SAMPLE_NAME
+    bcftools view -c1 -O z -s $SNV_SAMPLE_NAME -o $OUTPUT_DIR/truth_temp.sample.vcf.gz $truth --threads $CPU
+    truth=$OUTPUT_DIR/truth_temp.sample.vcf.gz
 fi
 
 ## Replace the 'chr' with '' in the VCFs
@@ -215,41 +230,37 @@ if [[ `bcftools query -l $sv | wc -l` -gt 1  && -z "$SV_SAMPLE_NAME" ]]; then
   SV_SAMPLE_NAME=$SAMPLE_NAME
 fi
 
-# Running SV ingestion script:
-# todo: use PASS toggle in this script as well
-conda activate eucancan_sv
-#conda activate eucancan
-#source activate ingestion
-
-echo -e "[Running Information]: Running SV ingest.py script \n"
-sv_dataframe=$OUTPUT_DIR/"sv_dataframe.csv"
-truth_sv_dataframe=$OUTPUT_DIR/"truth_sv_dataframe.csv"
-
-python $DIR/ingest.py $sv -samplename $SAMPLE_NAME -outputfile $sv_dataframe
-
-if [[ -z "$SV_SAMPLE_NAME" ]]; then
-  python $DIR/ingest.py $truth_sv -outputfile $truth_sv_dataframe
-else
-  python $DIR/ingest.py $truth_sv -samplename $SV_SAMPLE_NAME -outputfile $truth_sv_dataframe
-fi
-
-conda deactivate
 snvindel=$OUTPUT_DIR/"snv_indel.pass.sort.prep.norm.filtered.vcf"
 truth=$OUTPUT_DIR/"truth_temp.sort.prep.norm.filtered.vcf"
 
 # Running som.py:
-conda activate eucancan_sv
+#conda activate eucancan_sv
 #source activate eucancan
 echo -e "[Running Information]: Running som.py evaluation script\n"
 
 som.py $truth $snvindel -o $OUTPUT_DIR/$OUT_NAME --verbose -N
 
 echo -e "[Running Information]: script ended successfully\n"
+conda deactivate
 
-# Running SV benchmark:
-#conda activate eucancan_sv
-#conda activate eucancan
-source activate ingestion
+# Running SV part script:
+
+#conda env create -n eucancan_sv -f ~/golden-datasets/scripts/environment_sv.yml
+
+conda activate eucancan_sv
+#source activate eucancan_sv
+
+echo -e "[Running Information]: Running SV ingest.py script \n"
+sv_dataframe=$OUTPUT_DIR/"sv_dataframe.csv"
+truth_sv_dataframe=$OUTPUT_DIR/"truth_sv_dataframe.csv"
+
+python $DIR/ingest.py $sv -samplename $SAMPLE_NAME -outputfile $sv_dataframe -filter
+
+if [[ -z "$SV_SAMPLE_NAME" ]]; then
+  python $DIR/ingest.py $truth_sv -outputfile $truth_sv_dataframe -filter
+else
+  python $DIR/ingest.py $truth_sv -samplename $SV_SAMPLE_NAME -outputfile $truth_sv_dataframe -filter
+fi
 
 echo -e "[Running Information]: Running compare_node_to_truth.py script\n"
 metrics=$OUTPUT_DIR/"SV_benchmark_results.csv"

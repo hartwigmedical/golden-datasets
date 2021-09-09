@@ -85,17 +85,20 @@ def parse(vcf_reader, filter, samplename):
                     end_chrom, end = end_pos.split(":")
 
             if 'SVLEN' in record.INFO:
+                print("[DEBUG] SVLEN in record.INFO")
                 length = record.INFO['SVLEN']
                 if isinstance(length, list):
                     # Length is list
                     length = length[0]
             
             elif 'LEFT_SVINSSEQ' in record.INFO:
+                print("[DEBUG] LEFT_SVINSSEQ in record.INFO")
                 length = len(str(record.INFO['LEFT_SVINSSEQ'])) + len(str(record.INFO['RIGHT_SVINSSEQ']))                                    
             else:
                 if end_chrom == start_chrom:
                     length = int(end) - int(start)
                 else:
+                    print("[DEBUG] SV starts and ends on different chroms")
                     # SV starts and ends on different chromosomes
                     length = None
             ref = record.REF
@@ -110,8 +113,10 @@ def parse(vcf_reader, filter, samplename):
                 sv_type = record.var_subtype
 
 
-        elif record.is_snv:
-            sys.exit("[DEBUG] SNV in SV file.")
+        elif not record.is_sv:
+            print("[DEBUG] Entry that is not an SV in file:")
+            print("[DEBUG] " + str(record))
+            continue
 
 
         # Convert into table with: start_chrom, start, end_chrom, end, ref, alt, length, sv_type, genotype
