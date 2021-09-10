@@ -135,14 +135,14 @@ echo -e "[Running Information]: checking if vcf is multisample\n"
 
 #TODO : issue with the if statement: remove if and only keep elseif ?
 
-if [[ `bcftools query -l $snvindel | wc -l` -gt 1]]; then
-    echo "[ERROR]" $snvindel "is a multisample"
-    echo "[ERROR] sample name must be specified in -n parameter"
-    exit
-elif [[ `bcftools query -l $snvindel | wc -l` -gt 1  && ! -z "$SAMPLE_NAME" ]]; then
+if [[ `bcftools query -l $snvindel | wc -l` -gt 1  && ! -z "$SAMPLE_NAME" ]]; then
     echo $SAMPLE_NAME
     bcftools view -c1 -O z -s $SAMPLE_NAME -o $OUTPUT_DIR/snv_indel_temp.sample.vcf.gz $snvindel --threads $CPU
     snvindel=$OUTPUT_DIR/snv_indel_temp.sample.vcf.gz
+else [[ `bcftools query -l $snvindel | wc -l` -gt 1 ]];
+    echo "[ERROR]" $snvindel "is a multisample"
+    echo "[ERROR] sample name must be specified in -n parameter"
+    exit
 fi
 
 if [[ `bcftools query -l $truth | wc -l` -gt 1 ]]; then
