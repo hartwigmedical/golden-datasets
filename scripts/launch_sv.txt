@@ -1,4 +1,3 @@
-
 #Fill the variables with the appropiate paths and copy paste to the shell
 
 
