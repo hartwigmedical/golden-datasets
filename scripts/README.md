@@ -48,6 +48,8 @@ Add any new requirement for your code to [environment.yml](https://github.com/EU
 
 #### Usage
 
+The `launch_sv.txt` file can be filled with the paths and pasted to the shell to execute the scripts. 
+
 **1) Ingestion**
 
 
@@ -101,10 +103,10 @@ To benchmark snv calls from different centers, multipe steps are required:
 
 
 ```
-bash ingest_snv.sh  -h
+bash wrapper.sh  -h
 
 Usage:
-bash ingest_snv.sh -t, --truth truth_file.vcf
+bash wrapper.sh -t, --truth truth_file.vcf
                    -s, --snv snv.vcf
                    -i, --indel indel.vcf
                    -m, --snvindel indels_and_vcfs.vcf

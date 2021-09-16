@@ -1,0 +1,14 @@
+#Fill the variables with the appropiate paths and copy paste to the shell
+
+TEST_FILE=""
+TRUTH_FILE=""
+DATAFRAME_TEST_FILE=""
+DATAFRAME_TRUTH_FILE=""
+OUTPUT_METRICS_FILE=""
+SCRIPTS_DIR=""
+SAMPLENAME_TUMOR=""
+
+
+python $SCRIPTS_DIR/ingest.py $TEST_FILE -outputfile $DATAFRAME_TEST_FILE -samplename $SAMPLENAME_TUMOR
+python $SCRIPTS_DIR/ingest.py $TRUTH_FILE -outputfile $DATAFRAME_TRUTH_FILE
+python $SCRIPTS_DIR/compare_node_to_truth.py $DATAFRAME_TEST_FILE $DATAFRAME_TRUTH_FILE -metrics $OUTPUT_METRICS_FILE
