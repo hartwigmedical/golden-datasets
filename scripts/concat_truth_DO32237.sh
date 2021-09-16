@@ -32,3 +32,7 @@ bcftools index indel.vcf.gz
 bcftools concat -a snv.vcf.gz indel.vcf.gz > test.vcf.gz
 
 bcftools sort -o pilot50.snv_indel.vcf.gz -Oz test.vcf.gz
+
+# For the SV part:
+
+## use the header_sv.txt
