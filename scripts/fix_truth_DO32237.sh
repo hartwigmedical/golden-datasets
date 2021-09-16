@@ -13,7 +13,7 @@ awk '{if($0 !~ /^#/) print $0"\tGT:AD\t0/1:19,0"; else print $0}' 5e68f783-790f-
 #bien vérifier dans atom si les espaces et tabulations sont bien respectées !
 
 # reaheader
-bcftools reheader -h /home/daphne/golden-datasets/scripts/header_sv.txt -o sv_fixed.vcf -s PILOT50 temp_sv.vcf
+/opt/tools/bcftools/1.9/bcftools reheader -h /home/daphne/golden-datasets/scripts/header_sv.txt -o sv_fixed.vcf -s PILOT50 temp_sv.vcf
 
 # bgzip
 bgzip -c sv_fixed.vcf > sv_fixed.vcf.gz
