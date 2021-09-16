@@ -101,10 +101,10 @@ To benchmark snv calls from different centers, multipe steps are required:
 
 
 ```
-bash ingest_snv.sh  -h
+bash wrapper.sh  -h
 
 Usage:
-bash ingest_snv.sh -t, --truth truth_file.vcf
+bash wrapper.sh -t, --truth truth_file.vcf
                    -s, --snv snv.vcf
                    -i, --indel indel.vcf
                    -m, --snvindel indels_and_vcfs.vcf
