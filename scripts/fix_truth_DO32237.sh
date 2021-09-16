@@ -19,4 +19,4 @@ awk '{if($0 !~ /^#/) print $0"\tGT:AD\t0/1:19,0"; else print $0}' 5e68f783-790f-
 bgzip -c sv_fixed.vcf > sv_fixed.vcf.gz
 
 # index:
-bcftools index sv_fixed.vcf.gz
+/opt/tools/bcftools/1.9/bcftools index sv_fixed.vcf.gz
