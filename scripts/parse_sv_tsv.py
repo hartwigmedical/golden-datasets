@@ -18,7 +18,7 @@ def parse(vcf_reader, filter):
                 ref_version = "\t".join(line)
                 
             # Parse in header line for BSC, Charite, Truth file tsv
-            if line[0] in ["CHR1", "#chrom1", "new_id"]:
+            if line[0] in ["CHR1", "#chrom1", "new_id", "#CHROM"]:
                 header = line
                 print("[INFO] Header of TSV file found.")
                 #print(header)
@@ -101,6 +101,56 @@ def parse(vcf_reader, filter):
             length = int(line[header.index('size')])
             if length in [0, "0"]:
                 length = None #Only for SV involving different chr.. maybe use sth more specific.
+
+        #Truth ICGC support
+        elif "#CHROM" in header:
+            start_chrom = line[header.index('#CHROM')]
+            start = line[header.index('POS')]
+            # Bracket notation processing..., inspired by https://github.com/MariaNattestad/SplitThreader/blob/master/bin/standardize_variants.py
+            if line[header.index('ALT')].find(']') != -1 or line[header.index('ALT')].find(']') != -1:
+                if line[header.index('ALT')].find(']') != -1 or line[header.index('ALT')].find(']') != -1:
+                    sys.exit("This should not be happening, bracket notation is wrong")
+                open_bracket_pos = line[header.index('ALT')].find('[')
+                close_bracket_pos = line[header.index('ALT')].find(']')
+                strand2 = "-"
+
+                if line[header.index('ALT')].find(']') != -1:
+                    strand2 = "+"
+
+                if open_bracket_pos == -1:
+                    first_bracket = open_bracket_pos
+                elif open_bracket_pos != -1 and open_bracket_pos < close_bracket_pos:
+                    first_bracket = open_bracket_pos
+                else:
+                    first_bracket = close_bracket_pos
+
+                if line[header.index('ALT')][first_bracket+1:].find(']') == -1:
+                    second_bracket = line[header.index('ALT')][first_bracket+1:].find('[')
+                else:
+                    second_bracket = line[header.index('ALT')][first_bracket+1:].find(']')
+                second_bracket += first_bracket + 1
+
+                new_string = line[header.index('ALT')][first_bracket+1:second_bracket]
+
+                if first_bracket == 0:
+                    strand1 = "-"
+                elif second_bracket == len(line[header.index('ALT')])-1:
+                    strand1 = "+"
+                else:
+                    sys.exit("Something went wrong with bracket notation, please check")
+
+                print(new_string)
+                end_chrom = new_string.split(":")[0]
+                end = int(new_string.split(":")[1])
+
+            #end_chrom = line[header.index('ALT')] #NEEDS PROCESSING!
+            #end = line[header.index('ALT')] #NEEDS PROCESSING BECAUSE OF BRACKET NOTATION!
+            ref = line[header.index('REF')]
+            alt = line[header.index('ALT')]
+            if start_chrom == end_chrom:
+                length = int(end) - int(start)
+            else:
+                length = None #Only for SV involving different chr.. maybe use sth more specific.
     
             
         # FIND SV TYPE
@@ -142,6 +192,8 @@ def parse(vcf_reader, filter):
         #Truth COLO829 support
         elif "new_id" in header:
             sv_type = line[header.index('type')]
+        elif "#CHROM" in header:
+            sv_type = "BND"
             
         # Reformat types
         sv_type = sv_type.replace("deletion", "DEL")

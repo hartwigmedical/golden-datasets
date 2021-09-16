@@ -133,15 +133,26 @@ fi
 
 echo -e "[Running Information]: checking if vcf is multisample\n"
 
-# todo: check if the truth file is multisample or not!
-if [[ `bcftools query -l $snvindel |wc -l` -gt 1  && -z "$SAMPLE_NAME" ]]; then
-    echo "[ERROR]" $snvindel "is a multisample"
-    echo "[ERROR] sample name must be specified in -n parameter"
-    exit
-elif [[ `bcftools query -l $snvindel |wc -l` -gt 1  && ! -z "$SAMPLE_NAME" ]]; then
+#TODO : issue with the if statement: remove if and only keep elseif ?
+
+if [[ `bcftools query -l $snvindel | wc -l` -gt 1  && ! -z "$SAMPLE_NAME" ]]; then
     echo $SAMPLE_NAME
     bcftools view -c1 -O z -s $SAMPLE_NAME -o $OUTPUT_DIR/snv_indel_temp.sample.vcf.gz $snvindel --threads $CPU
     snvindel=$OUTPUT_DIR/snv_indel_temp.sample.vcf.gz
+else [[ `bcftools query -l $snvindel | wc -l` -gt 1 ]];
+    echo "[ERROR]" $snvindel "is a multisample"
+    echo "[ERROR] sample name must be specified in -n parameter"
+    exit
+fi
+
+if [[ `bcftools query -l $truth | wc -l` -gt 1 ]]; then
+    echo "[ERROR]" $truth "is a multisample"
+    echo "[ERROR] sample name must be specified in -b parameter"
+    exit
+elif [[ `bcftools query -l $truth | wc -l` -gt 1  && ! -z "$SNV_SAMPLE_NAME" ]]; then
+    echo $SNV_SAMPLE_NAME
+    bcftools view -c1 -O z -s $SNV_SAMPLE_NAME -o $OUTPUT_DIR/truth_temp.sample.vcf.gz $truth --threads $CPU
+    truth=$OUTPUT_DIR/truth_temp.sample.vcf.gz
 fi
 
 ## Replace the 'chr' with '' in the VCFs
@@ -233,7 +244,6 @@ echo -e "[Running Information]: script ended successfully\n"
 conda deactivate
 
 # Running SV part script:
-# todo: use PASS toggle in this script as well
 
 #conda env create -n eucancan_sv -f ~/golden-datasets/scripts/environment_sv.yml
 
@@ -244,12 +254,12 @@ echo -e "[Running Information]: Running SV ingest.py script \n"
 sv_dataframe=$OUTPUT_DIR/"sv_dataframe.csv"
 truth_sv_dataframe=$OUTPUT_DIR/"truth_sv_dataframe.csv"
 
-python $DIR/ingest.py $sv -samplename $SAMPLE_NAME -outputfile $sv_dataframe
+python $DIR/ingest.py $sv -samplename $SAMPLE_NAME -outputfile $sv_dataframe -filter
 
 if [[ -z "$SV_SAMPLE_NAME" ]]; then
-  python $DIR/ingest.py $truth_sv -outputfile $truth_sv_dataframe
+  python $DIR/ingest.py $truth_sv -outputfile $truth_sv_dataframe -filter
 else
-  python $DIR/ingest.py $truth_sv -samplename $SV_SAMPLE_NAME -outputfile $truth_sv_dataframe
+  python $DIR/ingest.py $truth_sv -samplename $SV_SAMPLE_NAME -outputfile $truth_sv_dataframe -filter
 fi
 
 echo -e "[Running Information]: Running compare_node_to_truth.py script\n"
