@@ -1,6 +1,4 @@
-
 #Fill the variables with the appropiate paths and copy paste to the shell
-
 
 TEST_FILE=""
 TRUTH_FILE=""
