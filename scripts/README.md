@@ -48,6 +48,8 @@ Add any new requirement for your code to [environment.yml](https://github.com/EU
 
 #### Usage
 
+The `launch_SV.txt` file can be filled with the paths and pasted to the shell to execute the scripts. 
+
 **1) Ingestion**
 
 
