@@ -62,6 +62,9 @@ After the download and conversion, `FASTQ` files can be compressed with `pigz` u
 make compress -j 4
 ```
 
+## Credit
+
+- This project has received funding from the European Union’s Horizon 2020 research and innovation programme and the Canadian Institutes of Health Research under the grant agreement No 825835 in the framework on the European-Canadian Cancer Network
 ## License
 
 Licensed under the
