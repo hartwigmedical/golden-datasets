@@ -115,15 +115,28 @@ def parse(vcf_reader, filter, samplename):
         #elif any(x in "[]" for x in record.ALT)
 
         elif not record.is_sv:
-            print(record.ALT)
-            print(record.ALT[0])
-            print(record.REF)
-            print(type(record.ALT[0]))
-            print(type(record.REF))
-            print(isinstance(record.ALT[0], _Breakend))
-            print(isinstance(record.REF, _Breakend))
-            print(any(x in "[]" for x in record.REF))
-            print(any(x in "[]" for x in record.ALT[0]))
+            ref = str(record.REF)
+            alt = str(record.ALT[0])
+            if any(x in "[]" for x in record.REF) or any(x in "[]" for x in record.ALT[0]):
+                # We're still looking at an SV, just inproperly tagged as such
+                end_pos = str(record.ALT[0]).replace("CHR", "").replace("chr", "").replace("A", "").replace("G", "").replace("T", "").replace("C", "").replace("N", "").replace("]", "").replace("[", "")
+                if "." in end_pos:
+                    end_pos = start
+                    end_chrom = start_chrom
+                else:
+                    #print(record)
+                    end_chrom, end = end_pos.split(":")
+
+                if end_chrom == start_chrom:
+                    length = int(end) - int(start)
+                else:
+                    print("[DEBUG] SV starts and ends on different chroms")
+                    # SV starts and ends on different chromosomes
+                    length = None
+
+                sv_type = record.var_subtype
+
+        else:
             print("[DEBUG] Entry that is not an SV in file:")
             print("[DEBUG] " + str(record))
             continue
