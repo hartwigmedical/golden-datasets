@@ -54,7 +54,7 @@ The `launch_sv.txt` file can be filled with the paths and pasted to the shell to
 
 
 Creates dataframes from VCF/TSV files. This step is required both for test files and truth files.
-Flag `-samplename` is required for VCF files and must contain the Tumor sample name
+Flag `-samplename` is required for VCF files and must contain the Tumor sample name.
 Flag `-filter` can be used in order to keep only PASS variants.
 
 ```shell
