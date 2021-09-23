@@ -117,7 +117,7 @@ def parse(vcf_reader, filter, samplename):
         elif not record.is_sv:
             ref = str(record.REF)
             alt = str(record.ALT[0])
-            if any(x in "[]" for x in record.REF) or any(x in "[]" for x in record.ALT[0]):
+            if any(x in "[]" for x in ref) or any(x in "[]" for x in alt):
                 # We're still looking at an SV, just inproperly tagged as such
                 end_pos = str(record.ALT[0]).replace("CHR", "").replace("chr", "").replace("A", "").replace("G", "").replace("T", "").replace("C", "").replace("N", "").replace("]", "").replace("[", "")
                 if "." in end_pos:
