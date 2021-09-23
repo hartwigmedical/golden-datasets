@@ -57,6 +57,8 @@ def parse(vcf_reader, filter, samplename):
 
                 if call.sample == sample:
                     index_sample = ind
+                    print("SET index sample " + ind)
+                    print(index_sample)
             if not index_sample:
                 sys.exit("[ERROR] Cannot find sample in the VCF file. Exiting.")
 
