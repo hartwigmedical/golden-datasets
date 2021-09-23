@@ -134,7 +134,7 @@ def parse(vcf_reader, filter, samplename):
                     # SV starts and ends on different chromosomes
                     length = None
 
-                sv_type = record.var_subtype
+                sv_type = "BND"
 
         else:
             print("[DEBUG] Entry that is not an SV in file:")
