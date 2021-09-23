@@ -50,16 +50,9 @@ def parse(vcf_reader, filter, samplename):
             # First get index of sample
             index_sample = None
             for ind, call in enumerate(record.samples):
-                print(call)
-                print("sample in file: " + call.sample)
-                print("sample for filtering: " + sample)
-                print(call.sample == sample)
-
                 if call.sample == sample:
                     index_sample = ind
-                    print("SET index sample " + ind)
-                    print(index_sample)
-            if not index_sample:
+            if index_sample is None:
                 sys.exit("[ERROR] Cannot find sample in the VCF file. Exiting.")
 
         start_chrom = record.CHROM.replace("CHR", "").replace("chr", "")
