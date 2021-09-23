@@ -50,8 +50,11 @@ def parse(vcf_reader, filter, samplename):
             # First get index of sample
             index_sample = None
             for ind, call in enumerate(record.samples):
-                print(ind)
                 print(call)
+                print("sample in file: " + call.sample)
+                print("sample for filtering: " sample)
+                print(call.sample == sample)
+
                 if call.sample == sample:
                     index_sample = ind
             if not index_sample:
