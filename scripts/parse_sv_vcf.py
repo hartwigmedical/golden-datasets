@@ -112,8 +112,13 @@ def parse(vcf_reader, filter, samplename):
             else:
                 sv_type = record.var_subtype
 
+        #elif any(x in "[]" for x in record.ALT)
 
         elif not record.is_sv:
+            print(record.ALT)
+            print(record.ALT[0])
+            print(record.REF)
+            print(any(x in "[]" for x in record.REF))
             print("[DEBUG] Entry that is not an SV in file:")
             print("[DEBUG] " + str(record))
             continue
