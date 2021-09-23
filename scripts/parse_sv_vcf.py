@@ -118,6 +118,7 @@ def parse(vcf_reader, filter, samplename):
             print(record.ALT)
             print(record.ALT[0])
             print(record.REF)
+            print(type(record.ALT[0]))
             print(any(x in "[]" for x in record.REF))
             print(any(x in "[]" for x in record.ALT[0]))
             print("[DEBUG] Entry that is not an SV in file:")
