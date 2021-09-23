@@ -52,7 +52,7 @@ def parse(vcf_reader, filter, samplename):
             for ind, call in enumerate(record.samples):
                 print(call)
                 print("sample in file: " + call.sample)
-                print("sample for filtering: " sample)
+                print("sample for filtering: " + sample)
                 print(call.sample == sample)
 
                 if call.sample == sample:
