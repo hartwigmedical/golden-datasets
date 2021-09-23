@@ -44,11 +44,7 @@ def parse(vcf_reader, filter, samplename):
                     sample = samplename
                     print("[INFO] Filtering for the following sample in the VFC: " + sample)
             else:
-                print(record.samples)
-                sample = record.samples[0]
-                print(sample)
-                sample = sample.sample
-                print(sample)
+                sample = record.samples[0].sample
                 print("[INFO] Using only sample in the VCF: " + sample)
 
             # First get index of sample
