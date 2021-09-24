@@ -44,7 +44,7 @@ def parse(vcf_reader, filter, samplename):
                     sample = samplename
                     print("[INFO] Filtering for the following sample in the VFC: " + sample)
             else:
-                sample = record.samples[0]
+                sample = record.samples[0].sample
                 print("[INFO] Using only sample in the VCF: " + sample)
 
             # First get index of sample
@@ -52,7 +52,7 @@ def parse(vcf_reader, filter, samplename):
             for ind, call in enumerate(record.samples):
                 if call.sample == sample:
                     index_sample = ind
-            if not index_sample:
+            if index_sample is None:
                 sys.exit("[ERROR] Cannot find sample in the VCF file. Exiting.")
 
         start_chrom = record.CHROM.replace("CHR", "").replace("chr", "")
@@ -112,8 +112,31 @@ def parse(vcf_reader, filter, samplename):
             else:
                 sv_type = record.var_subtype
 
+        #elif any(x in "[]" for x in record.ALT)
 
         elif not record.is_sv:
+            ref = str(record.REF)
+            alt = str(record.ALT[0])
+            if any(x in "[]" for x in ref) or any(x in "[]" for x in alt):
+                # We're still looking at an SV, just inproperly tagged as such
+                end_pos = str(record.ALT[0]).replace("CHR", "").replace("chr", "").replace("A", "").replace("G", "").replace("T", "").replace("C", "").replace("N", "").replace("]", "").replace("[", "")
+                if "." in end_pos:
+                    end_pos = start
+                    end_chrom = start_chrom
+                else:
+                    #print(record)
+                    end_chrom, end = end_pos.split(":")
+
+                if end_chrom == start_chrom:
+                    length = int(end) - int(start)
+                else:
+                    print("[DEBUG] SV starts and ends on different chroms")
+                    # SV starts and ends on different chromosomes
+                    length = None
+
+                sv_type = "BND"
+
+        else:
             print("[DEBUG] Entry that is not an SV in file:")
             print("[DEBUG] " + str(record))
             continue
