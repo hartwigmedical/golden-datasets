@@ -42,7 +42,7 @@ To download datasets listed in `data/datasets.tsv`, use the `make` command descr
 make download -j 4 INSTALL_DIR=$HOME/golden-datasets
 ```
 
-By default, the installation directory is set to the `data` folder in the main repository aside the dataset `tsv` files. This behaviour can be change like in the example above where the installation directory is set from the environment variable `INSTALL_DIR`. Environment variables can be passed to the `make`command line tool as positional arguments. 
+By default, the installation directory is set to the `data` folder in the main repository aside the dataset `tsv` files. This behaviour can be change like in the example above where the installation directory is set from the environment variable `INSTALL_DIR`. Environment variables can be passed to the `make`command line tool as positional arguments.
 
 <aside class="notice">
 Several files in those datasets require a synapse account in order to download them. Go to https://www.synapse.org/ in order to create an account. Those credentials will be asked the first time the make command is launched.</aside>
@@ -62,6 +62,9 @@ After the download and conversion, `FASTQ` files can be compressed with `pigz` u
 make compress -j 4
 ```
 
+## Credit
+
+- This project has received funding from the European Union’s Horizon 2020 research and innovation programme and the Canadian Institutes of Health Research under the grant agreement No 825835 in the framework of the [European-Canadian Cancer Network](https://eucancan.com/)
 ## License
 
 Licensed under the
