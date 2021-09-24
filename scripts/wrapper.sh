@@ -2,7 +2,8 @@
 set -e
 #EUCANCAN SNV & INDEL vcf handling
 KEEP=false
-PASS=true
+NOPASS=false
+NOPASS_TRUTH=false
 CPU=1
 while [ $# -gt 0 ] ; do
   case $1 in
@@ -19,7 +20,8 @@ while [ $# -gt 0 ] ; do
       -n | --sname) SAMPLE_NAME="$2";;
       -a | --truth_sv_sname) SV_SAMPLE_NAME="$2";;
       -b | --truth_snv_sname) SNV_SAMPLE_NAME="$2";;
-      -p | --pass) PASS=false;;
+      -p | --no_pass) NOPASS=true;;
+      -q | --no_pass_truth) NOPASS_TRUTH=true;;
       -c | --cpu) CPU="$2";;
       -k | --keep) KEEP=true;;
       -h | --help)  echo "Usage:"
@@ -36,7 +38,8 @@ while [ $# -gt 0 ] ; do
           echo "                   -n, --sname vcf sample name"
           echo "                   -a, --truth_sv_sname sample name for truth sv if different"
           echo "                   -b, --truth_snv_sname sample name for truth snv if different"
-          echo "                   -p, --pass keep only the pass variants"
+          echo "                   -p, --no_pass keep the pass variants and other variants in test file"
+          echo "                   -p, --no_pass_truth keep the pass variants and other variants in truth file"
           echo "                   -c, --cpu number of threads"
           echo "                   -k, --keep (to keep intermediates files)"
           exit
@@ -47,13 +50,15 @@ done
 
 echo " "
 echo -e "[General Information]:\n"
-echo -e "General parameters:"
+echo -e "[General parameters]:"
 echo "output path:" $OUTPUT_DIR
 echo "output file Name:" $OUT_NAME
 echo "keep intermediate files ?:" $KEEP
 echo "Number of threads:" $CPU
+echo "keep pass & other variants in all test file?" $NOPASS
+echo "keep pass & other variants in all truth file?" $NOPASS_TRUTH
 
-echo -e "SNV Benchmarking:"
+echo -e "\n[SNV Benchmarking]:"
 echo "Truth File:" $truth
 echo "SNV vcf file:" $snv
 echo "INDEL vcf file:" $indel
@@ -61,10 +66,9 @@ echo "SNV + INDEL vcf file:" $snvindel
 echo "vcf sample name:" $SAMPLE_NAME
 echo "truth snv sample name:" $SNV_SAMPLE_NAME
 echo "target bed:" $target
-echo "keep only pass variant ?" $PASS
 echo "Reference fasta file:" $FASTA
 
-echo -e "SV Benchmarking:"
+echo -e "\n[SV Benchmarking]:"
 echo "SV vcf file:" $sv
 echo "TRUTH SV file:" $truth_sv
 echo "truth sv sample name:" $SV_SAMPLE_NAME
@@ -174,23 +178,44 @@ if [[ -n "$truth" && ( -n "$snv" && -n "$indel" || -n "$snvindel") ]];then
     snvindel=$OUTPUT_DIR/"snv_indel_temp.vcf"
     truth=$OUTPUT_DIR/"truth_temp.vcf"
 
-    ## Filtering PASS variants:
-    if [[ ! -z "$PASS" ]]; then
-        echo -e "[Running Information]: Filtering PASS variant\n"
+    ## Filtering test file PASS variants:
+    if [[ "$NOPASS" = false && ! -z "$snvindel" ]]; then
+        echo -e "[Running Information]: keeping only PASS variants in snv test file\n"
 
         grep "PASS\|#" $snvindel > $OUTPUT_DIR/"snv_indel.pass.vcf"
 
         snvindel=$OUTPUT_DIR/"snv_indel.pass.vcf"
     fi
 
+    ## Filtering truth file PASS variants:
+    if [[ "$NOPASS_TRUTH" = false && ! -z "$truth" ]]; then
+        echo -e "[Running Information]: keeping only PASS variants in snv truth file\n"
+
+        grep "PASS\|#" $truth > $OUTPUT_DIR/"truth_temp.pass.vcf"
+
+        truth=$OUTPUT_DIR/"truth_temp.pass.vcf"
+    fi
+
+    if [[ "$NOPASS_TRUTH" = false && ! -z "$truth_sv" && $truth_sv == *.vcf ]]; then
+        echo -e "[Running Information]: keeping only PASS variants in sv truth file\n"
+
+        grep "PASS\|#" $truth_sv> $OUTPUT_DIR/"truth_temp_sv.pass.vcf"
+        truth_sv=$OUTPUT_DIR/"truth_temp_sv.pass.vcf"
+    elif [[ "$NOPASS_TRUTH" = false && ! -z "$truth_sv" && $truth_sv == *.vcf.gz ]];then
+        echo -e "[Running Information]: keeping only PASS variants in sv truth file\n"
+
+        zcat $truth_sv | grep "PASS\|#"> $OUTPUT_DIR/"truth_temp_sv.pass.vcf"
+        truth_sv=$OUTPUT_DIR/"truth_temp_sv.pass.vcf"
+    fi
+
     # Sorting vcf files
     echo -e "[Running Information]: sorting vcf files\n"
 
     bcftools sort $snvindel -o $OUTPUT_DIR/"snv_indel.pass.sort.vcf.gz" -O z
-    bcftools sort $truth -o $OUTPUT_DIR/truth_temp.sort.vcf.gz -O z
+    bcftools sort $truth -o $OUTPUT_DIR/"truth_temp.pass.sort.vcf.gz" -O z
 
     snvindel=$OUTPUT_DIR/"snv_indel.pass.sort.vcf.gz"
-    truth=$OUTPUT_DIR/"truth_temp.sort.vcf.gz"
+    truth=$OUTPUT_DIR/"truth_temp.pass.sort.vcf.gz"
 
     # indexing sorted vcf files
     echo -e "[Running Information]: indexing vcf files\n"
@@ -246,13 +271,24 @@ if [[ -n "$truth" && ( -n "$snv" && -n "$indel" || -n "$snvindel") ]];then
     #conda activate eucancan_sv
     #source activate eucancan
     echo -e "[Running Information]: Running som.py evaluation script\n"
-
-    if [[ ! -z "$target" ]];then
-        som.py $truth $snvindel -o $OUTPUT_DIR/$OUT_NAME --verbose -N -R $target
+    if [[ "$NOPASS" = true ]]; then
+        if [[ ! -z "$target" ]];then
+            echo "NOPASS + Target"
+            som.py $truth $snvindel -o $OUTPUT_DIR/$OUT_NAME --verbose -N -P -R $target
+        else
+            echo "NOPASS"
+            som.py $truth $snvindel -o $OUTPUT_DIR/$OUT_NAME --verbose -N -P
+        fi
     else
-        som.py $truth $snvindel -o $OUTPUT_DIR/$OUT_NAME --verbose -N
+        if [[ ! -z "$target" ]];then
+            echo "Target"
+            som.py $truth $snvindel -o $OUTPUT_DIR/$OUT_NAME --verbose -N -R $target
+        else
+            echo "Basic"
+            som.py $truth $snvindel -o $OUTPUT_DIR/$OUT_NAME --verbose -N
+        fi
     fi
-    
+
     echo -e "[Running Information]: SNV becnhmarking ended successfully\n"
     conda deactivate
 
@@ -271,12 +307,17 @@ if [[ -n "$sv" && "$truth_sv" ]];then
     sv_dataframe=$OUTPUT_DIR/"sv_dataframe.csv"
     truth_sv_dataframe=$OUTPUT_DIR/"truth_sv_dataframe.csv"
 
-    python $DIR/ingest.py $sv -samplename $SAMPLE_NAME -outputfile $sv_dataframe -filter
-
-    if [[ -z "$SV_SAMPLE_NAME" ]]; then
-      python $DIR/ingest.py $truth_sv -outputfile $truth_sv_dataframe -filter
+    ## Filtering PASS variants:
+    if [[ "$NOPASS" = false ]]; then
+        echo -e "[Running Information]: keeping only SV PASS variants\n"
+        python $DIR/ingest.py $sv -samplename $SAMPLE_NAME -outputfile $sv_dataframe -filter
+        if [[ -z "$SV_SAMPLE_NAME" ]]; then
+          python $DIR/ingest.py $truth_sv -outputfile $truth_sv_dataframe -filter
+        else
+          python $DIR/ingest.py $truth_sv -samplename $SV_SAMPLE_NAME -outputfile $truth_sv_dataframe -filter
+        fi
     else
-      python $DIR/ingest.py $truth_sv -samplename $SV_SAMPLE_NAME -outputfile $truth_sv_dataframe -filter
+        python $DIR/ingest.py $sv -samplename $SAMPLE_NAME -outputfile $sv_dataframe
     fi
 
     echo -e "[Running Information]: Running compare_node_to_truth.py script\n"
