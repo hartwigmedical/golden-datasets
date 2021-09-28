@@ -35,4 +35,13 @@ bcftools sort -o pilot50.snv_indel.vcf.gz -Oz test.vcf.gz
 
 # For the SV part:
 
+gunzip 5e68f783-790f-4aed-b7c5-56c34538fb09.pilot50.20160609.somatic.sv.vcf.gz
+
+# Add format field:
+awk '{if($0 !~ /^#/) print $0"\tGT:AD\t0/1:19,0"; else print $0}' 5e68f783-790f-4aed-b7c5-56c34538fb09.pilot50.20160609.somatic.sv.vcf > temp_sv.vcf
+
+# reaheader
 ## use the header_sv.txt
+bcftools reheader -h /bioinfo/users/tgutman/Documents/Tom/EUCANCan/golden-datasets/scripts/header_sv.txt -o sv.vcf -s PILOT50 temp_sv.vcf
+
+bgzip -c sv.vcf> sv.vcf.gz
