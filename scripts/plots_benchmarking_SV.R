@@ -30,6 +30,15 @@ if (is.null(opt$bsc) && is.null(opt$charite) && is.null(opt$curie) && is.null(op
   stop("At least one argument must be supplied (input file).n", call.=FALSE)
 }
 
+# testing:
+#bscTable=read.table("/bioinfo/users/tgutman/Documents/Tom/EUCANCan/Benchmark/TCGA/results/DO32237_curie/SV_benchmark_results.csv", header=TRUE, sep =",",stringsAsFactors = FALSE)
+#bscTable$Center="BSC"
+#svTable=bscTable[-c(4,8,12,16,20),]
+
+#truthTsv=read.table("/bioinfo/users/tgutman/Documents/Tom/EUCANCan/Benchmark/TCGA/results/DO32237_curie/truth_sv_dataframe.csv",header=TRUE,stringsAsFactors = FALSE,sep=",")
+
+#colo=read.table("/bioinfo/users/tgutman/Documents/Tom/EUCANCan/Benchmark/colo829/TRUTH/COLO829_truth.tsv",header=TRUE,stringsAsFactors = FALSE,sep="\t")
+
 # Check if arg is present and add to svTable
 svTable=data.frame()
 
@@ -64,7 +73,7 @@ if (!is.null(opt$oicr)){
 }
 
 # Load truth table
-truthTsv=read.table(opt$truth,header=TRUE,stringsAsFactors = FALSE,sep="\t")
+truthTsv=read.table(opt$truth,header=TRUE,stringsAsFactors = FALSE,sep=",")
 
 # Transform svTable: anonymize, change bin name
 svTable=svTable %>% 
@@ -74,13 +83,13 @@ svTable=svTable %>%
                             Center == "Hartwig" ~ "Node 4",
                             Center == "OICR" ~ "Node 5")) %>% 
   mutate(Center=factor(Center,levels=c("Node 1", "Node 2", "Node 3", "Node 4","Node 5"))) %>% 
-  mutate(All.results = case_when(All.results == "All results" ~ "All",
-                                 All.results == "Bin 0-50 bp" ~ "0-50",
-                                 All.results == "Bin 50-200 bp" ~ "50-200",
-                                 All.results == "Bin 200-1000 bp" ~ "200-1000",
-                                 All.results == "Bin 1000-100000000000000000000000000000 bp" ~ "> 1000",
-                                 All.results == "Bin NaN bp" ~ "NaN")) %>% 
-  dplyr::rename(Bin = All.results)
+  mutate(Bin.0.50.bp = case_when(Bin.0.50.bp == "All results" ~ "All",
+                                 Bin.0.50.bp == "Bin 0-50 bp" ~ "0-50",
+                                 Bin.0.50.bp == "Bin 50-200 bp" ~ "50-200",
+                                 Bin.0.50.bp == "Bin 200-1000 bp" ~ "200-1000",
+                                 Bin.0.50.bp == "Bin 1000-100000000000000000000000000000 bp" ~ "> 1000",
+                                 Bin.0.50.bp == "Bin NaN bp" ~ "NaN")) %>% 
+  dplyr::rename(Bin = Bin.0.50.bp)
 
 write.table(svTable,file = paste0(opt$outputDir ,"svTable.csv"),row.names = FALSE)
 
@@ -101,26 +110,32 @@ tidySV=svTable %>%
 colnames(tidySV)=c("Bin","Center","DEL","INS","DUP","INV","BND")
 
 print("truth")
-print(truthTsv)
+print(head(truthTsv))
+
 # Transform Truth Table
 truthTsv= truthTsv %>% 
-  select(new_id,type,size) %>% 
-  mutate(bin = cut(truthTsv$size,c(0,1,50,200,1000,1000000000),include.lowest = TRUE))
+  mutate(ID=paste(start_chrom,start,sep = "_")) %>% 
+  select(ID,type,length) %>% 
+  mutate(bin = case_when(length == 0 | length == 1 | length == NA | type == "BND" ~ "NaN",
+                         length > 1 & length <= 50 ~ "0-50",
+                         length > 50 & length <= 200 ~ "50-200",
+                         length > 200 & length <= 1000 ~ "200-1000",
+                         length > 1000 ~ "> 1000"))
+
+truthTsv$bin=factor(truthTsv$bin,levels=c("NaN","0-50","50-200","200-1000","> 1000"))
+truthTsv$type=factor(truthTsv$type,levels=c("BND","DEL","DUP","INS","INV"))
 
 print("truth")
 print(truthTsv)
+
 # Count the number of TP of each category and put everything together
+
 SV_count=t(table(truthTsv$type,truthTsv$bin))
 SV_count = as.data.frame.matrix(SV_count) %>% 
   rownames_to_column() %>% 
   dplyr::rename(Bin = rowname) %>%
   mutate(Center="Truth") %>% 
   select(Bin,Center,DEL,INS,DUP,INV,BND) %>% 
-  mutate(Bin = case_when(Bin == "[0,1]" ~ "NaN",
-                         Bin == "(1,50]" ~ "0-50",
-                         Bin == "(50,200]" ~ "50-200",
-                         Bin == "(200,1e+03]" ~ "200-1000",
-                         Bin == "(1e+03,1e+09]" ~ "> 1000")) %>% 
   bind_rows(tidySV)
 
 SV_count$Bin=fct_relevel(as.factor(SV_count$Bin), "0-50", "50-200","200-1000","> 1000","NaN")
@@ -136,7 +151,7 @@ tidySvTP=svTable %>%
   select(-c("FP_original", "FP_tier", "Recall", "Precision", "F1.score", "TP_DEL", "TP_INS", "TP_DUP", "TP_INV", "TP_BND")) %>% 
   pivot_longer(cols=c(TP,FP,FN), names_to="metric",values_to="count")
 
-ggplot(tidySvTP,aes(x= Center,y=count,fill=metric)) +
+ggplot(tidySvTP,aes(x= Center,y=as.numeric(count),fill=metric)) +
   geom_bar(stat="identity", position="dodge") +
   scale_fill_brewer(palette="Set1") +
   theme_bw()+
@@ -157,7 +172,7 @@ tidySvTP_all=svTable %>%
   select(Bin,Center,starts_with("TP")) %>% 
   pivot_longer(cols=starts_with("TP"),names_to = "metric",values_to = "count")
 
-ggplot(tidySvTP_all,aes(x= Center,y=count,fill=metric)) +
+ggplot(tidySvTP_all,aes(x= Center,y=as.numeric(count),fill=metric)) +
   geom_bar(stat="identity", position="dodge") +
   scale_fill_brewer(palette="Set1") +
   theme_bw() +
