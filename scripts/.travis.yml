@@ -1,0 +1,8 @@
+services:
+  - docker
+
+before_install:
+  - cd scripts && sudo build.sh
+
+script:
+  - docker run eucancan_benchmark -t dummy_data/dummy_test_snv.vcf -s dummy_data/dummy_truth_snv.vcf -i dummy_data/dummy_test_indels.vcf -v dummy_data/dummy_test_SV.tsv -u dummy_data/dummy_truth_SV.tsv -d ~/WIP/tmp -o dummy_output_name -n dummy_sname -a dummy_truth_sv_sname -b dummy_truth_snv_sname -p

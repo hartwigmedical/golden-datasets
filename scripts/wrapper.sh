@@ -1,5 +1,6 @@
-#!/bin/bash
-set -e
+#!/bin/bash --login
+# The --login ensures the bash configuration is loaded,
+set -euo pipefail
 #EUCANCAN SNV & INDEL vcf handling
 KEEP=false
 NOPASS=false
