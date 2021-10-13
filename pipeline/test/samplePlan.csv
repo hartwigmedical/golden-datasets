@@ -1,0 +1,3 @@
+TYPE,PATH,SNAME,TRUTH,TRUTH_SNAME
+snv,test/data/snv.vcf,sname1,test/data/truth_snv.vcf,sname2
+sv,test/data/sv.vcf,sname3,test/data/truth_sv.vcf,sname4
