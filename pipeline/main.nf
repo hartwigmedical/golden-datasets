@@ -121,11 +121,29 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
  * CHANNELS *
  ************/
 // TODO: make sample plan work
-// samplePlanPathCh = params.samplePlan ? Channel.fromPath(params.samplePlan): Channel.empty()
-// samplePlanCh = samplePlanPathCh
-//     .splitCsv(header:true)
-//     .map { row -> [ row.TYPE, file(row.PATH), row.SNAME, file(row.TRUTH), row.TRUTH_SNAME ]}
-//     .dump(tag : "test")
+samplePlanPathCh = params.samplePlan ? Channel.fromPath(params.samplePlan): Channel.empty()
+samplePlanCh = samplePlanPathCh
+     .splitCsv(header:true)
+     .map { row ->
+        [
+            type: row.TYPE,
+            sampleFile: file(row.PATH),
+            sampleName: row.SNAME,
+            truthFile: file(row.TRUTH),
+            truthSampleName: row.TRUTH_SNAME
+        ]
+    }.dump(tag : "samplePlanCh")
+
+// Branching samplePlan according to their compression state
+samplePlanCh.branch{ row ->
+    rawSamplesCh: row.sampleFile=~ /.*vcf$/ || row.truthFile=~ /.*vcf$/
+    compressSamplesCh: row.sampleFile=~ /.*gz$/ && row.truthFile=~ /.*gz$/
+}.set { samplePlanForks }
+
+(rawSamplesCh, compressSamplesCh) = [
+    samplePlanForks.rawSamplesCh.dump(tag: "rawSamplesCh"),
+    samplePlanForks.compressSamplesCh.dump(tag: "compressSamplesCh")
+]
 
 snvCh = params.snv ? Channel.value(file(params.snv)) : Channel.empty()
 indelCh = params.indel ? Channel.value(file(params.indel)) : Channel.empty()
@@ -142,9 +160,9 @@ truthSvSnameCh = params.truthSvSname ? Channel.value(file(params.truthSvSname)) 
 fastaCh = params.fasta ? Channel.value(file(params.fasta)) : Channel.empty()
 targetBedCh = params.targetBed ? Channel.value(file(params.targetBed)) : "null"
 
-noPassCh = params.noPassCh ? : false
-noPassTruthCh = params.noPassTruthCh ? : false
-keepCh = params.keep ? : false
+//noPassCh = params.noPassCh ? : false
+//noPassTruthCh = params.noPassTruthCh ? : false
+//keepCh = params.keep ? : false
 
 
 /*******************
@@ -189,9 +207,24 @@ log.info "======================================================="
  ************/
 
 // TODO: branch sample plan for bgzip
-// samplePlanCh.branch{
-//
-// }
+
+process compressVcf {
+    label "onlyLinux"
+    label "lowCpu"
+    label "lowMem"
+
+    input:  $snvindel $truth
+    output: $snvindel $truth
+    script:
+
+    """
+    gzip $OUTPUT_DIR/snv_indel_temp.vcf
+    snvindel=$OUTPUT_DIR/snv_indel_temp.vcf.gz
+
+    gzip $OUTPUT_DIR/truth_temp.vcf
+    truth=$OUTPUT_DIR/truth_temp.vcf.gz
+    """
+}
 
 process mergeSnvIndel {
     input: $snv $indel
@@ -210,19 +243,6 @@ process mergeSnvIndel {
     snvindel=$OUTPUT_DIR/"snv_indel_temp.vcf.gz"
     """
 
-}
-
-process compressVcf {
-    input:  $snvindel $truth
-    output: $snvindel $truth
-    script:
-    """
-    gzip $OUTPUT_DIR/snv_indel_temp.vcf
-    snvindel=$OUTPUT_DIR/snv_indel_temp.vcf.gz
-
-    gzip $OUTPUT_DIR/truth_temp.vcf
-    truth=$OUTPUT_DIR/truth_temp.vcf.gz
-    """
 }
 
 process chrHandling {
@@ -253,7 +273,7 @@ process mergeSnvIndel {
     output:
     script:
 
-}
+}*/
 /**********
  * FastQC *
  **********/

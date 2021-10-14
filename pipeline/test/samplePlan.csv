@@ -1,3 +1,7 @@
 TYPE,PATH,SNAME,TRUTH,TRUTH_SNAME
-snv,test/data/snv.vcf,sname1,test/data/truth_snv.vcf,sname2
-sv,test/data/sv.vcf,sname3,test/data/truth_sv.vcf,sname4
+snv,test/data/snv.vcf,rawTSName1,test/data/truth_snv.vcf,rawTSName1
+snv,test/data/snv.vcf,rawSName2,test/data/truth_snv.vcf,rawTSName2
+snv,test/data/snv.vcf.gz,compressSName3,test/data/truth_snv.vcf,rawTSName3
+snv,test/data/snv.vcf,rawSName4,test/data/truth_snv.vcf.gz,compressTSName4
+sv,test/data/snv.vcf,rawSName5,test/data/truth_snv.vcf,rawTSName5
+sv,test/data/sv.vcf.gz,compressSName6,test/data/truth_sv.vcf.gz,compressTSName6
