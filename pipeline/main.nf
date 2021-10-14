@@ -152,10 +152,12 @@ svCh = params.sv ? Channel.value(file(params.sv)) : Channel.empty()
 truthCh = params.truth ? Channel.value(file(params.truth)) : Channel.empty()
 truthSvCh = params.truthSv ? Channel.value(file(params.truthSv)) : Channel.empty()
 
-snvSnameCh = params.snvSname ? Channel.value(file(params.snvSname)) : Channel.empty()
-svSnameCh = params.svSname ? Channel.value(file(params.svSname)) : Channel.empty()
-truthSnvSnameCh = params.truthSnvSname ? Channel.value(file(params.truthSnvSname)) : Channel.empty()
-truthSvSnameCh = params.truthSvSname ? Channel.value(file(params.truthSvSname)) : Channel.empty()
+snvSnameCh = params.snvSname ? Channel.value(params.snvSname) : Channel.empty()
+indelSnameCh = params.indelSname ? Channel.value(params.indelSname) : Channel.empty()
+snvIndelSnameCh = params.snvIndelSname ? Channel.value(params.snvIndelSname) : Channel.empty()
+svSnameCh = params.svSname ? Channel.value(params.svSname) : Channel.empty()
+truthSnvSnameCh = params.truthSnvSname ? Channel.value(params.truthSnvSname) : Channel.empty()
+truthSvSnameCh = params.truthSvSname ? Channel.value(params.truthSvSname) : Channel.empty()
 
 fastaCh = params.fasta ? Channel.value(file(params.fasta)) : Channel.empty()
 targetBedCh = params.targetBed ? Channel.value(file(params.targetBed)) : "null"
@@ -208,97 +210,115 @@ log.info "======================================================="
 
 // TODO: branch sample plan for bgzip
 
-process compressVcf {
-    label "onlyLinux"
-    label "lowCpu"
-    label "lowMem"
-
-    input:  $snvindel $truth
-    output: $snvindel $truth
-    script:
-
-    """
-    gzip $OUTPUT_DIR/snv_indel_temp.vcf
-    snvindel=$OUTPUT_DIR/snv_indel_temp.vcf.gz
-
-    gzip $OUTPUT_DIR/truth_temp.vcf
-    truth=$OUTPUT_DIR/truth_temp.vcf.gz
-    """
-}
-
-process mergeSnvIndel {
-    input: $snv $indel
-    output: snvindel=$OUTPUT_DIR/"snv_indel_temp.vcf.gz"
-    script:
-    """
-    bgzip -@ $CPU -c $snv > $snv".gz"
-    bgzip -@ $CPU -c $indel > $indel".gz"
-    snv=$snv".gz"
-    indel=$indel".gz"
-
-    bcftools index --threads $CPU -f -o $snv".csi" $snv
-    bcftools index --threads $CPU -f -o $indel".csi" $indel
-
-    bcftools concat -a $snv $indel -O z -o $OUTPUT_DIR/"snv_indel_temp.vcf.gz" --threads $CPU
-    snvindel=$OUTPUT_DIR/"snv_indel_temp.vcf.gz"
-    """
-
-}
-
+// process compressVcf {
+//     label "onlyLinux"
+//     label "lowCpu"
+//     label "lowMem"
+//
+//     input:  $snvindel $truth
+//     output: $snvindel $truth
+//     script:
+//
+//     """
+//     gzip $OUTPUT_DIR/snv_indel_temp.vcf
+//     snvindel=$OUTPUT_DIR/snv_indel_temp.vcf.gz
+//
+//     gzip $OUTPUT_DIR/truth_temp.vcf
+//     truth=$OUTPUT_DIR/truth_temp.vcf.gz
+//     """
+// }
+//
+// process mergeSnvIndel {
+//     input: $snv $indel
+//     output: snvindel=$OUTPUT_DIR/"snv_indel_temp.vcf.gz"
+//     script:
+//     """
+//     bgzip -@ $CPU -c $snv > $snv".gz"
+//     bgzip -@ $CPU -c $indel > $indel".gz"
+//     snv=$snv".gz"
+//     indel=$indel".gz"
+//
+//     bcftools index --threads $CPU -f -o $snv".csi" $snv
+//     bcftools index --threads $CPU -f -o $indel".csi" $indel
+//
+//     bcftools concat -a $snv $indel -O z -o $OUTPUT_DIR/"snv_indel_temp.vcf.gz" --threads $CPU
+//     snvindel=$OUTPUT_DIR/"snv_indel_temp.vcf.gz"
+//     """
+//
+// }
+//
 process chrHandling {
-    input: $snvindel $truth
-    output: $snvindel $truth
+    input:
+    file(snvIndel) from snvIndelCh
+    file(truth) from truthCh
+
+    output:
+    file("snv_indel_temp.vcf.gz") into snvIndelChrCh
+    file("truth_temp.vcf.gz") into truthChrCh
+
     script:
     """
-    zcat $snvindel | awk '{if($0 !~ /^#/) print "chr"$0; else print $0}' | awk '{gsub(/contig=\<ID=/,"contig=<ID=chr"); print}' | awk '{gsub(/chrchr/,"chr"); print}' > $OUTPUT_DIR/snv_indel_temp.vcf
-    gzip $OUTPUT_DIR/snv_indel_temp.vcf
+    zcat ${snvIndel} | awk '{if(\$0 !~ /^#/) print "chr"\$0; else print \$0}' | awk '{gsub(/contig=\\<ID=/,"contig=<ID=chr"); print}' | awk '{gsub(/chrchr/,"chr"); print}' > snv_indel_temp.vcf
+    gzip snv_indel_temp.vcf
 
-    zcat $truth | awk '{if($0 !~ /^#/) print "chr"$0; else print $0}' | awk '{gsub(/contig=\<ID=/,"contig=<ID=chr"); print}' | awk '{gsub(/chrchr/,"chr"); print}' > $OUTPUT_DIR/truth_temp.vcf
-    gzip $OUTPUT_DIR/truth_temp.vcf
-
-    snvindel=$OUTPUT_DIR/"snv_indel_temp.vcf.gz"
-    truth=$OUTPUT_DIR/"truth_temp.vcf.gz"
+    zcat ${truth} | awk '{if(\$0 !~ /^#/) print "chr"\$0; else print \$0}'| awk '{gsub(/contig=\\<ID=/,"contig=<ID=chr"); print}' | awk '{gsub(/chrchr/,"chr"); print}' > truth_temp.vcf
+    gzip truth_temp.vcf
     """
 }
 
-process mergeSnvIndel {
-    input:
-    output:
-    script:
 
+process splitMultiSample {
+    //TODO: add CPU label
+    input:
+    file(snvIndel) from snvIndelChrCh
+    file(truth) from truthChrCh
+    val(sname) from snvIndelSnameCh
+    val(truthSnvSname) from truthSnvSnameCh
+
+    output:
+    file("snv_indel_temp.sample.vcf.gz") into snvIndelSampleCh
+    file("truth_temp.sample.vcf.gz") into truthSampleCh
+
+    script:
+    """
+    echo ${sname}
+    bcftools view -c1 -O z -s ${sname} -o snv_indel_temp.sample.vcf.gz ${snvIndel}
+
+    bcftools view -c1 -O z -s ${truthSnvSname} -o truth_temp.sample.vcf.gz ${truth}
+    """
 }
-
-process mergeSnvIndel {
-    input:
-    output:
-    script:
-
-}*/
+//
+// process mergeSnvIndel {
+//     input:
+//     output:
+//     script:
+//
+// }*/
 /**********
  * FastQC *
  **********/
 
-process fastqc {
-  label 'fastqc'
-  label 'lowMem'
-  label 'lowCpu'
-
-  tag "${prefix}"
-  publishDir "${params.outDir}/fastqc", mode: 'copy'
-
-  input:
-  set val(prefix), file(reads) from rawReadsFastqcCh
-
-  output:
-  file "*_fastqc.{zip,html}" into fastqcResultsCh
-  file "v_fastqc.txt" into fastqcVersionCh
-
-  script:
-  """
-  fastqc -q $reads
-  fastqc --version > v_fastqc.txt
-  """
-}
+// process fastqc {
+//   label 'fastqc'
+//   label 'lowMem'
+//   label 'lowCpu'
+//
+//   tag "${prefix}"
+//   publishDir "${params.outDir}/fastqc", mode: 'copy'
+//
+//   input:
+//   set val(prefix), file(reads) from rawReadsFastqcCh
+//
+//   output:
+//   file "*_fastqc.{zip,html}" into fastqcResultsCh
+//   file "v_fastqc.txt" into fastqcVersionCh
+//
+//   script:
+//   """
+//   fastqc -q $reads
+//   fastqc --version > v_fastqc.txt
+//   """
+// }
 
 
 workflow.onComplete {
