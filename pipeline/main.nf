@@ -162,11 +162,13 @@ truthSvSnameCh = params.truthSvSname ? Channel.value(params.truthSvSname) : Chan
 fastaCh = params.fasta ? Channel.value(file(params.fasta)) : Channel.empty()
 targetBedCh = params.targetBed ? Channel.value(file(params.targetBed)) : "null"
 
-//noPassCh = params.noPassCh ? : false
-//noPassTruthCh = params.noPassTruthCh ? : false
+outNameCh = params.outName ? Channel.value(params.outName) : Channel.empty()
+noPassCh = params.noPassCh ? : false
+noPassTruthCh = params.noPassTruthCh ? : false
+noPassTruthSvCh = params.noPassTruthSvCh ? : false
 //keepCh = params.keep ? : false
 
-
+outNameCh.dump(tag: "outNameCh")
 /*******************
  * Header log info *
  *******************/
@@ -207,6 +209,10 @@ log.info "======================================================="
 /************
  * PROCESS *
  ************/
+
+ /********************
+  * SNV Benchmarking *
+  ********************/
 
 // TODO: branch sample plan for bgzip
 
@@ -268,7 +274,10 @@ process chrHandling {
 
 
 process splitMultiSample {
-    //TODO: add CPU label
+    label "onlyLinux"
+    label "medCpu"
+    label "lowMem"
+
     input:
     file(snvIndel) from snvIndelChrCh
     file(truth) from truthChrCh
@@ -282,18 +291,147 @@ process splitMultiSample {
     script:
     """
     echo ${sname}
-    bcftools view -c1 -O z -s ${sname} -o snv_indel_temp.sample.vcf.gz ${snvIndel}
+    bcftools view -c1 --threads ${task.cpus} -O z -s ${sname} -o snv_indel_temp.sample.vcf.gz ${snvIndel}
 
-    bcftools view -c1 -O z -s ${truthSnvSname} -o truth_temp.sample.vcf.gz ${truth}
+    bcftools view -c1 --threads ${task.cpus} -O z -s ${truthSnvSname} -o truth_temp.sample.vcf.gz ${truth}
     """
 }
-//
-// process mergeSnvIndel {
-//     input:
-//     output:
-//     script:
-//
-// }*/
+
+process filterPASS {
+    input:
+    file(snvIndel) from snvIndelSampleCh
+    file(truth) from truthSampleCh
+    file(truthSv) from truthSvCh
+
+    output:
+    file("snv_indel.pass.vcf") into snvIndelPassCh
+    file("truth_temp.pass.vcf") into truthSamplePassCh
+    file("truth_temp_sv.pass.vcf") into truthSvPassCh
+
+    script:
+    """
+    zcat ${snvIndel} | grep "PASS\\|#" > snv_indel.pass.vcf
+
+    zcat ${truth} | grep "PASS\\|#" > truth_temp.pass.vcf
+
+    zcat ${truthSv} | grep "PASS\\|#" > truth_temp_sv.pass.vcf
+    """
+}
+
+process PrepareAndNormalize {
+    label "onlyLinux"
+    label "medCpu"
+    label "lowMem"
+
+    input:
+    file(snvIndel) from snvIndelPassCh
+    file(truth) from truthSamplePassCh
+    file(fasta) from fastaCh
+
+    output:
+    file("snv_indel.pass.sort.prep.norm.vcf.gz") into snvIndelNormCh
+    file("truth_temp.sort.prep.norm.vcf.gz") into truthSampleNormCh
+
+    script:
+    """
+    bcftools sort ${snvIndel} -o snv_indel.pass.sort.vcf.gz -O z
+    bcftools sort ${truth} -o truth_temp.pass.sort.vcf.gz -O z
+
+    snvindel="snv_indel.pass.sort.vcf.gz"
+    truth="truth_temp.pass.sort.vcf.gz"
+
+    bcftools index -f -o \$snvindel".csi" \$snvindel --threads ${task.cpus}
+    bcftools index -f -o \$truth".csi" \$truth --threads ${task.cpus}
+
+    export HGREF=${fasta}
+
+    multimerge \$snvindel -r \$HGREF -o snv_indel.pass.sort.prep.vcf.gz --calls-only=1
+    multimerge \$truth -r \$HGREF -o truth_temp.sort.prep.vcf.gz --calls-only=1
+
+    snvindel="snv_indel.pass.sort.prep.vcf.gz"
+    truth="truth_temp.sort.prep.vcf.gz"
+
+    pre.py \$snvindel snv_indel.pass.sort.prep.norm.vcf.gz -L --decompose --somatic --threads ${task.cpus}
+
+    pre.py \$truth truth_temp.sort.prep.norm.vcf.gz -L --decompose --somatic --threads ${task.cpus}
+    """
+}
+
+process benchmarkSNV {
+    //TODO: add CPU label
+    input:
+    file(snvIndel) from snvIndelNormCh
+    file(truth) from truthSampleNormCh
+    file(target) from targetBedCh
+    file(fasta) from fastaCh
+    val(outName) from outNameCh
+
+    output:
+    file("*.stats.csv") into sompySnvCh
+
+    script:
+    if (params.targetBed)
+    """
+    export HGREF=${fasta}
+
+    som.py ${truth} ${snvIndel} -o ${outName} -N -R ${target}
+    """
+    else
+    """
+    export HGREF=${fasta}
+
+    som.py ${truth} ${snvIndel} -o ${outName} -N
+    """
+}
+
+/********************
+ * SV Benchmarking *
+ ********************/
+ process ingestSV {
+     input:
+     file(sv) from svCh
+     val(svSname) from svSnameCh
+
+     output:
+     file("sv_dataframe.csv") into svDf
+
+     script:
+     svSnameArg = params.svSname ? " -samplename ${svSname} ": ''
+     """
+     ingest.py ${sv} ${svSnameArg} -outputfile "sv_dataframe.csv" -filter
+     """
+ }
+
+ process ingestSvTruth {
+     input:
+     file(truth) from truthSvCh
+     val(truthSvSname) from truthSvSnameCh
+
+     output:
+     file("truth_sv_dataframe.csv") into truthSvDf
+
+     script:
+     truthSvSnameArg = params.truthSvSname ? " -samplename ${truthSvSname} ": ''
+     """
+     ingest.py ${truth} ${truthSvSnameArg} -outputfile "truth_sv_dataframe.csv" -filter
+     """
+ }
+
+ process compareTruthSv {
+     input:
+     file(svDf) from svDf
+     val(truthSvDf) from truthSvDf
+
+     output:
+     file("SV_benchmark_results.csv") into truthSvDf
+
+     script:
+     truthSvSnameArg = params.truthSvSname ? " -samplename ${truthSvSname} ": ''
+     """
+     compare_node_to_truth.py ${svDf} ${truthSvDf} -metrics SV_benchmark_results.csv
+     """
+ }
+
 /**********
  * FastQC *
  **********/
