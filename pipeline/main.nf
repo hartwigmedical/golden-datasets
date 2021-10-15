@@ -145,12 +145,12 @@ samplePlanCh.branch{ row ->
     samplePlanForks.compressSamplesCh.dump(tag: "compressSamplesCh")
 ]
 
-snvCh = params.snv ? Channel.value(file(params.snv)) : Channel.empty()
-indelCh = params.indel ? Channel.value(file(params.indel)) : Channel.empty()
-snvIndelCh = params.snvIndel ? Channel.value(file(params.snvIndel)) : Channel.empty()
-svCh = params.sv ? Channel.value(file(params.sv)) : Channel.empty()
-truthCh = params.truth ? Channel.value(file(params.truth)) : Channel.empty()
-truthSvCh = params.truthSv ? Channel.value(file(params.truthSv)) : Channel.empty()
+snvCh = params.snv ? Channel.of(file(params.snv)) : Channel.empty()
+indelCh = params.indel ? Channel.of(file(params.indel)) : Channel.empty()
+snvIndelCh = params.snvIndel ? Channel.of(file(params.snvIndel)) : Channel.empty()
+svCh = params.sv ? Channel.of(file(params.sv)) : Channel.empty()
+truthCh = params.truth ? Channel.of(file(params.truth)) : Channel.empty()
+truthSvCh = params.truthSv ? Channel.of(file(params.truthSv)) : Channel.empty()
 
 snvSnameCh = params.snvSname ? Channel.value(params.snvSname) : Channel.empty()
 indelSnameCh = params.indelSname ? Channel.value(params.indelSname) : Channel.empty()
@@ -163,9 +163,6 @@ fastaCh = params.fasta ? Channel.value(file(params.fasta)) : Channel.empty()
 targetBedCh = params.targetBed ? Channel.value(file(params.targetBed)) : "null"
 
 outNameCh = params.outName ? Channel.value(params.outName) : Channel.empty()
-noPassCh = params.noPassCh ? : false
-noPassTruthCh = params.noPassTruthCh ? : false
-noPassTruthSvCh = params.noPassTruthSvCh ? : false
 //keepCh = params.keep ? : false
 
 outNameCh.dump(tag: "outNameCh")
@@ -254,6 +251,8 @@ log.info "======================================================="
 // }
 //
 process chrHandling {
+    label "snv"
+
     input:
     file(snvIndel) from snvIndelCh
     file(truth) from truthCh
@@ -274,9 +273,9 @@ process chrHandling {
 
 
 process splitMultiSample {
-    label "onlyLinux"
     label "medCpu"
     label "lowMem"
+    label "snv"
 
     input:
     file(snvIndel) from snvIndelChrCh
@@ -298,34 +297,38 @@ process splitMultiSample {
 }
 
 process filterPASS {
+    label "snv"
+
     input:
-    file(snvIndel) from snvIndelSampleCh
-    file(truth) from truthSampleCh
-    file(truthSv) from truthSvCh
+    file snvIndel name "snv_indel_temp.sample.vcf.gz" from snvIndelSampleCh
+    file truth name "truth_temp.sample.vcf.gz" from truthSampleCh
+    file truthSv name "truth_sv.vcf.gz" from truthSvCh
 
     output:
-    file("snv_indel.pass.vcf") into snvIndelPassCh
-    file("truth_temp.pass.vcf") into truthSamplePassCh
-    file("truth_temp_sv.pass.vcf") into truthSvPassCh
+    file(params.noPass ? "snv_indel_temp.sample.vcf.gz" : "snv_indel.pass.vcf") into snvIndelPassCh
+    file(params.noPassTruth ? "truth_temp.sample.vcf.gz":"truth_temp.pass.vcf") into truthSamplePassCh
+    file(params.noPassTruthSv ? "truth_sv.vcf.gz" :"truth_temp_sv.pass.vcf") into truthSvPassCh
 
     script:
+    passSnvCmd = params.noPass ? '': "zcat ${snvIndel} | grep 'PASS\\|#' > snv_indel.pass.vcf"
+    passTruthCmd = params.noPassTruth ? '': "zcat ${truth} | grep 'PASS\\|#' > truth_temp.pass.vcf"
+    passTruthSvCmd = params.noPassTruthSv ? '':"zcat ${truthSv} | grep 'PASS\\|#' > truth_temp_sv.pass.vcf"
     """
-    zcat ${snvIndel} | grep "PASS\\|#" > snv_indel.pass.vcf
-
-    zcat ${truth} | grep "PASS\\|#" > truth_temp.pass.vcf
-
-    zcat ${truthSv} | grep "PASS\\|#" > truth_temp_sv.pass.vcf
+    ${passSnvCmd}
+    ${passTruthCmd}
+    ${passTruthSvCmd}
     """
 }
 
+
 process PrepareAndNormalize {
-    label "onlyLinux"
     label "medCpu"
     label "lowMem"
+    label "snv"
 
     input:
-    file(snvIndel) from snvIndelPassCh
-    file(truth) from truthSamplePassCh
+    file(snvIndel) from snvIndelPassCh.dump(tag: "prepNormsnv")
+    file(truth) from truthSamplePassCh.dump(tag: "prepNormtruth")
     file(fasta) from fastaCh
 
     output:
@@ -358,6 +361,8 @@ process PrepareAndNormalize {
 }
 
 process benchmarkSNV {
+    label "snv"
+
     //TODO: add CPU label
     input:
     file(snvIndel) from snvIndelNormCh
@@ -370,17 +375,12 @@ process benchmarkSNV {
     file("*.stats.csv") into sompySnvCh
 
     script:
-    if (params.targetBed)
+    targetArg = params.targetBed ? " -R ${target} ": ''
+    noPassArg = params.noPass ? " -P ": ''
     """
     export HGREF=${fasta}
 
-    som.py ${truth} ${snvIndel} -o ${outName} -N -R ${target}
-    """
-    else
-    """
-    export HGREF=${fasta}
-
-    som.py ${truth} ${snvIndel} -o ${outName} -N
+    som.py ${truth} ${snvIndel} -o ${outName} -N  ${noPassArg}  ${targetArg}
     """
 }
 
@@ -388,6 +388,8 @@ process benchmarkSNV {
  * SV Benchmarking *
  ********************/
  process ingestSV {
+     label "sv"
+
      input:
      file(sv) from svCh
      val(svSname) from svSnameCh
@@ -403,8 +405,10 @@ process benchmarkSNV {
  }
 
  process ingestSvTruth {
+     label "sv"
+
      input:
-     file(truth) from truthSvCh
+     file(truth) from truthSvPassCh
      val(truthSvSname) from truthSvSnameCh
 
      output:
@@ -418,15 +422,17 @@ process benchmarkSNV {
  }
 
  process compareTruthSv {
+     label "sv"
+
      input:
      file(svDf) from svDf
      val(truthSvDf) from truthSvDf
 
      output:
-     file("SV_benchmark_results.csv") into truthSvDf
+     file("SV_benchmark_results.csv") into svResultsCh
 
      script:
-     truthSvSnameArg = params.truthSvSname ? " -samplename ${truthSvSname} ": ''
+     truthSvSnameArg = params.truthSvSname ? " -samplename ${params.truthSvSname} ": ''
      """
      compare_node_to_truth.py ${svDf} ${truthSvDf} -metrics SV_benchmark_results.csv
      """
