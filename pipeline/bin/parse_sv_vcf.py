@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import sys
 
 def parse(vcf_reader, filter, samplename):
@@ -90,10 +92,10 @@ def parse(vcf_reader, filter, samplename):
                 if isinstance(length, list):
                     # Length is list
                     length = length[0]
-            
+
             elif 'LEFT_SVINSSEQ' in record.INFO:
                 print("[DEBUG] LEFT_SVINSSEQ in record.INFO")
-                length = len(str(record.INFO['LEFT_SVINSSEQ'])) + len(str(record.INFO['RIGHT_SVINSSEQ']))                                    
+                length = len(str(record.INFO['LEFT_SVINSSEQ'])) + len(str(record.INFO['RIGHT_SVINSSEQ']))
             else:
                 if end_chrom == start_chrom:
                     length = int(end) - int(start)

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 #EVALUATION SCRIPT
 import sys
 import argparse
@@ -12,10 +14,10 @@ inv_a <-VC_tab_formated[grepl("*]$",VC_tab_formated$ALT),]
       inv_a$SV_TYPE <- "INV"
       inv_b <- VC_tab_formated[grepl("^\\Q[\\E",VC_tab_formated$ALT),]
       inv_b$SV_TYPE <- "INV"
-      
+
       dup_b <- VC_tab_formated[grepl("^\\Q]\\E",VC_tab_formated$ALT),]
       dup_b$SV_TYPE <- "DUP"
-      
+
       del_a <- VC_tab_formated[grepl("\\Q[\\E$",VC_tab_formated$ALT),]
       del_a$SV_TYPE <- "DEL"
 '''
@@ -132,12 +134,12 @@ def calculate_performance(comp_df, FN_df, FP_df):
             recall = 0
         else:
             recall = TP / (TP + FN)
-        
+
         if (TP + FP_new + FP_orig)==0:
-            precision= 0        
+            precision= 0
         else:
             precision = TP / (TP + FP_new + FP_orig)
-        
+
         if (recall + precision) == 0:
             F1 = 0
         else:
@@ -187,7 +189,7 @@ def calculate_characteristics(truth, test, window):
     else:
         diff_length = test['length'] - truth['length']
 
-    
+
     if pd.isnull(truth['length']) or truth['length']==0:
         length_truth = np.NaN
         norm_start_pos = np.NaN

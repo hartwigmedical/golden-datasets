@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import sys
 import pandas as pd
 
@@ -8,21 +10,21 @@ def parse(vcf_reader, filter):
     ref_version = "Unknown"
     header = False
     #min_nr_progs = 2    # Define the number of programs that need to call the variant for it to continue
-    
+
     for line in vcf_reader:
         line = line.rstrip().split()
-       
+
         if not header:
             # Try finding a reference genome file
             if "##reference" in line[0]:
                 ref_version = "\t".join(line)
-                
+
             # Parse in header line for BSC, Charite, Truth file tsv
             if line[0] in ["CHR1", "#chrom1", "new_id", "#CHROM"]:
                 header = line
                 print("[INFO] Header of TSV file found.")
                 #print(header)
-    
+
             # If variants are reached without column names been found, stop execution
             if line[0] in list(map(str,list(range(1,23)))) \
                 or line[0] in ["X", "Y"] \
@@ -30,11 +32,11 @@ def parse(vcf_reader, filter):
                         or line[0].startswith("truthset"):
                 if header == False:
                     sys.exit("[ERROR] Column names not found. Exiting.")
-    
+
             continue
-    
+
         nr_of_vars += 1
-        
+
         # FILTERING (Option to separate this in a different function)
         if filter:
             # BSC support
@@ -57,7 +59,7 @@ def parse(vcf_reader, filter):
             elif "new_id" in header:
                 pass
 
-    
+
         # FIND VARIANT INFO (option to separate in a different function)
         # BSC TSV support
         if 'CHR1' in header:
@@ -71,9 +73,9 @@ def parse(vcf_reader, filter):
                 length = int(end) - int(start)
             else:
                 length = None #Only for SV involving different chr.. maybe use sth more specific.
-    
+
         # Charite TSV support
-        elif '#chrom1' in header:   
+        elif '#chrom1' in header:
             start_chrom = line[header.index('#chrom1')]
             start = line[header.index('start1')]
             end_chrom = line[header.index('chrom2')]
@@ -84,9 +86,9 @@ def parse(vcf_reader, filter):
                 length = int(end) - int(start)
             else:
                 length = None #Only for SV involving different chr.. maybe use sth more specific.
-    
+
         #Truth COLO829 support
-        elif "new_id" in header: 
+        elif "new_id" in header:
             start_chrom = line[header.index('chr1')]
             start = line[header.index('pos1')]
             end_chrom = line[header.index('chr2')]
@@ -151,8 +153,8 @@ def parse(vcf_reader, filter):
                 length = int(end) - int(start)
             else:
                 length = None #Only for SV involving different chr.. maybe use sth more specific.
-    
-            
+
+
         # FIND SV TYPE
         # BSC TSV support
         if 'CHR1' in header:
@@ -185,7 +187,7 @@ def parse(vcf_reader, filter):
                     print("Unknown SV combination! Please check!")
                     print(svtypes)
                     sv_type = None
-    
+
         # Charite support
         elif '#chrom1' in header:
             sv_type = line[header.index('svtype')]
@@ -194,19 +196,19 @@ def parse(vcf_reader, filter):
             sv_type = line[header.index('type')]
         elif "#CHROM" in header:
             sv_type = "BND"
-            
+
         # Reformat types
         sv_type = sv_type.replace("deletion", "DEL")
         sv_type = sv_type.replace("inversion", "INV")
         sv_type = sv_type.replace("translocation", "TRA")
         sv_type = sv_type.replace("insertion", "INS")
         sv_type = sv_type.replace("duplication", "DUP")
-    
+
         #variants["length"] = pd.to_numeric(variants["length"])
-    
+
         #Gather variant info
         variants.append([start_chrom, start, end_chrom, end, ref, alt, length, sv_type])
-    
+
     print("[INFO] Reference version: " + ref_version)
 
     return(variants, nr_of_vars, nr_filtered)
