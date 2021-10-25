@@ -5,6 +5,7 @@ import pandas as pd
 import parse_sv_vcf
 import parse_sv_tsv
 import numpy as np
+import gzip
 
 
 def main():
@@ -21,9 +22,22 @@ def main():
     print("[INFO] Use only pass calls?: " + str(args.filter))
     variants = []
 
+
     # Account for: .vcf, .vcf.gz, .tsv
+    
+
     if args.vcf[-3:] == ".gz":
-        vcf_reader = vcf.Reader(filename=args.vcf)
+        # Fix header of some files
+        with gzip.open(args.vcf, 'rt') as f:
+            filedata = f.read()
+        filedata = filedata.replace('##INFO=<ID=RGNNO,Number=1,Type=Integer','##INFO=<ID=RGNNO,Number=1,Type=String')
+        filedata = filedata.replace('##INFO=<ID=RGNC,Number=1,Type=Integer','##INFO=<ID=RGNC,Number=1,Type=String')
+        
+        with open('intermediary_file.vcf', 'w') as file:
+            file.write(filedata)
+        
+        vcf_reader = vcf.Reader(open('intermediary_file.vcf', 'r'))
+
     elif args.vcf[-4:] == ".vcf":
         vcf_reader = vcf.Reader(open(args.vcf, 'r'))
     elif args.vcf[-4:] == ".tsv":
