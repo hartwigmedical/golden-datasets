@@ -145,6 +145,18 @@ if [[ -n "$truth" && ( -n "$snv" && -n "$indel" || -n "$snvindel") ]];then
         truth=$OUTPUT_DIR/truth_temp.vcf.gz
     fi
 
+    ## Replace the 'chr' with '' in the VCFs
+
+    echo -e "[Running Information]: replacing "" by "chr"\n"
+
+    zcat $snvindel | awk '{if($0 !~ /^#/) print "chr"$0; else print $0}' | awk '{gsub(/contig=\<ID=/,"contig=<ID=chr"); print}' | awk '{gsub(/chrchr/,"chr"); print}' > $OUTPUT_DIR/snv_indel_temp.vcf
+    gzip $OUTPUT_DIR/snv_indel_temp.vcf
+    zcat $truth | awk '{if($0 !~ /^#/) print "chr"$0; else print $0}' | awk '{gsub(/contig=\<ID=/,"contig=<ID=chr"); print}' | awk '{gsub(/chrchr/,"chr"); print}' > $OUTPUT_DIR/truth_temp.vcf
+    gzip $OUTPUT_DIR/truth_temp.vcf
+
+    snvindel=$OUTPUT_DIR/"snv_indel_temp.vcf.gz"
+    truth=$OUTPUT_DIR/"truth_temp.vcf.gz"
+
     # Check if vcf is mono sample:
 
     echo -e "[Running Information]: checking if vcf is multisample\n"
@@ -159,7 +171,7 @@ if [[ -n "$truth" && ( -n "$snv" && -n "$indel" || -n "$snvindel") ]];then
         exit
     fi
 
-    if [[ `bcftools query -l $truth | wc -l` -gt 1 ]]; then
+    if [[ `bcftools query -l $truth | wc -l` -gt 1 && -z "$SNV_SAMPLE_NAME" ]]; then
         echo "[ERROR]" $truth "is a multisample"
         echo "[ERROR] sample name must be specified in -b parameter"
         exit
@@ -169,21 +181,11 @@ if [[ -n "$truth" && ( -n "$snv" && -n "$indel" || -n "$snvindel") ]];then
         truth=$OUTPUT_DIR/truth_temp.sample.vcf.gz
     fi
 
-    ## Replace the 'chr' with '' in the VCFs
-
-    echo -e "[Running Information]: replacing "" by "chr"\n"
-
-    zcat $snvindel | awk '{if($0 !~ /^#/) print "chr"$0; else print $0}' | awk '{gsub(/contig=\<ID=/,"contig=<ID=chr"); print}' | awk '{gsub(/chrchr/,"chr"); print}' > $OUTPUT_DIR/snv_indel_temp.vcf
-    zcat $truth | awk '{if($0 !~ /^#/) print "chr"$0; else print $0}' | awk '{gsub(/contig=\<ID=/,"contig=<ID=chr"); print}' | awk '{gsub(/chrchr/,"chr"); print}' > $OUTPUT_DIR/truth_temp.vcf
-
-    snvindel=$OUTPUT_DIR/"snv_indel_temp.vcf"
-    truth=$OUTPUT_DIR/"truth_temp.vcf"
-
     ## Filtering test file PASS variants:
     if [[ "$NOPASS" = false && ! -z "$snvindel" ]]; then
         echo -e "[Running Information]: keeping only PASS variants in snv test file\n"
 
-        grep "PASS\|#" $snvindel > $OUTPUT_DIR/"snv_indel.pass.vcf"
+        zcat $snvindel | grep "PASS\|#" > $OUTPUT_DIR/"snv_indel.pass.vcf"
 
         snvindel=$OUTPUT_DIR/"snv_indel.pass.vcf"
     fi
@@ -192,7 +194,7 @@ if [[ -n "$truth" && ( -n "$snv" && -n "$indel" || -n "$snvindel") ]];then
     if [[ "$NOPASS_TRUTH" = false && ! -z "$truth" ]]; then
         echo -e "[Running Information]: keeping only PASS variants in snv truth file\n"
 
-        grep "PASS\|#" $truth > $OUTPUT_DIR/"truth_temp.pass.vcf"
+        zcat $truth | grep "PASS\|#" > $OUTPUT_DIR/"truth_temp.pass.vcf"
 
         truth=$OUTPUT_DIR/"truth_temp.pass.vcf"
     fi
@@ -200,7 +202,7 @@ if [[ -n "$truth" && ( -n "$snv" && -n "$indel" || -n "$snvindel") ]];then
     if [[ "$NOPASS_TRUTH" = false && ! -z "$truth_sv" && $truth_sv == *.vcf ]]; then
         echo -e "[Running Information]: keeping only PASS variants in sv truth file\n"
 
-        grep "PASS\|#" $truth_sv> $OUTPUT_DIR/"truth_temp_sv.pass.vcf"
+        zcat $truth_sv | grep "PASS\|#" > $OUTPUT_DIR/"truth_temp_sv.pass.vcf"
         truth_sv=$OUTPUT_DIR/"truth_temp_sv.pass.vcf"
     elif [[ "$NOPASS_TRUTH" = false && ! -z "$truth_sv" && $truth_sv == *.vcf.gz ]];then
         echo -e "[Running Information]: keeping only PASS variants in sv truth file\n"
@@ -274,18 +276,14 @@ if [[ -n "$truth" && ( -n "$snv" && -n "$indel" || -n "$snvindel") ]];then
     echo -e "[Running Information]: Running som.py evaluation script\n"
     if [[ "$NOPASS" = true ]]; then
         if [[ ! -z "$target" ]];then
-            echo "NOPASS + Target"
             som.py $truth $snvindel -o $OUTPUT_DIR/$OUT_NAME --verbose -N -P -R $target
         else
-            echo "NOPASS"
             som.py $truth $snvindel -o $OUTPUT_DIR/$OUT_NAME --verbose -N -P
         fi
     else
         if [[ ! -z "$target" ]];then
-            echo "Target"
             som.py $truth $snvindel -o $OUTPUT_DIR/$OUT_NAME --verbose -N -R $target
         else
-            echo "Basic"
             som.py $truth $snvindel -o $OUTPUT_DIR/$OUT_NAME --verbose -N
         fi
     fi
@@ -343,7 +341,7 @@ fi
 
 if [[ -n "$sv" && "$truth_sv" ]];then
     echo -e "[Running Information]: Running plots_benchmarking_SV.R script\n"
-    Rscript $DIR/plots_benchmarking_SV.R -b $OUTPUT_DIR/"SV_benchmark_results.csv" -t $truth_sv -o $OUTPUT_DIR/$OUT_NAME
+    Rscript $DIR/plots_benchmarking_SV.R -b $OUTPUT_DIR/"SV_benchmark_results.csv" -t $truth_sv_dataframe -o $OUTPUT_DIR/$OUT_NAME
 fi
 
 conda deactivate
