@@ -40,35 +40,47 @@ if (is.null(opt$bsc) && is.null(opt$charite) && is.null(opt$curie) && is.null(op
 #colo=read.table("/bioinfo/users/tgutman/Documents/Tom/EUCANCan/Benchmark/colo829/TRUTH/COLO829_truth.tsv",header=TRUE,stringsAsFactors = FALSE,sep="\t")
 
 # Check if arg is present and add to svTable
+
+# bscTable=read.table("~/Documents/Tom/EUCANCan/Benchmark/TCGA/results/DO32237_curie/SV_benchmark_results.csv",header=TRUE,sep =",",stringsAsFactors = FALSE)
+# 
+# bscTable=read.table("/bioinfo/users/tgutman/Documents/Tom/EUCANCan/golden-datasets/pipeline/work/16/b93353413aff983bc6c81a9f83fdc5/SV_benchmark_results.csv",header=TRUE,sep =",",stringsAsFactors = FALSE)
+  
+  
+
 svTable=data.frame()
 
 if (!is.null(opt$bsc)){
   bscTable = read.table(opt$bsc, header=TRUE, sep =",",stringsAsFactors = FALSE)
   bscTable$Center="BSC"
+  colnames(bscTable)[1]="Bin"
   svTable=rbind(svTable,bscTable[-c(4,8,12,16,20),])
 }
 
 if (!is.null(opt$charite)){
   chariteTable = read.table(opt$charite, header=TRUE, sep =",",stringsAsFactors = FALSE)
   chariteTable$Center="Charite"
+  colnames(chariteTable)[1]="Bin"
   svTable=rbind(svTable,chariteTable[-c(4,8,12,16,20),])
 }
 
 if (!is.null(opt$curie)){
   curieTable = read.table(opt$curie, header=TRUE, sep =",",stringsAsFactors = FALSE)
   curieTable$Center="Curie"
+  colnames(curieTable)[1]="Bin"
   svTable=rbind(svTable,curieTable[-c(4,8,12,16,20),])
 }
 
 if (!is.null(opt$hartwig)){
   hartwigTable = read.table(opt$hartwig, header=TRUE, sep =",",stringsAsFactors = FALSE)
   hartwigTable$Center="Hartwig"
+  colnames(hartwigTable)[1]="Bin"
   svTable=rbind(svTable,hartwigTable[-c(4,8,12,16,20),])
 }
 
 if (!is.null(opt$oicr)){
   oicrTable = read.table(opt$oicr, header=TRUE, sep =",",stringsAsFactors = FALSE)
   oicrTable$Center="OICR"
+  colnames(oicrTable)[1]="Bin"
   svTable=rbind(svTable,oicrTable[-c(4,8,12,16,20),])
 }
 
@@ -83,13 +95,12 @@ svTable=svTable %>%
                             Center == "Hartwig" ~ "Node 4",
                             Center == "OICR" ~ "Node 5")) %>% 
   mutate(Center=factor(Center,levels=c("Node 1", "Node 2", "Node 3", "Node 4","Node 5"))) %>% 
-  mutate(Bin.0.50.bp = case_when(Bin.0.50.bp == "All results" ~ "All",
-                                 Bin.0.50.bp == "Bin 0-50 bp" ~ "0-50",
-                                 Bin.0.50.bp == "Bin 50-200 bp" ~ "50-200",
-                                 Bin.0.50.bp == "Bin 200-1000 bp" ~ "200-1000",
-                                 Bin.0.50.bp == "Bin 1000-100000000000000000000000000000 bp" ~ "> 1000",
-                                 Bin.0.50.bp == "Bin NaN bp" ~ "NaN")) %>% 
-  dplyr::rename(Bin = Bin.0.50.bp)
+  mutate(Bin = case_when(Bin == "All results" ~ "All",
+                         Bin == "Bin 0-50 bp" ~ "0-50",
+                         Bin == "Bin 50-200 bp" ~ "50-200",
+                         Bin == "Bin 200-1000 bp" ~ "200-1000",
+                         Bin == "Bin 1000-100000000000000000000000000000 bp" ~ "> 1000",
+                         Bin == "Bin NaN bp" ~ "NaN"))
 
 write.table(svTable,file = paste0(opt$outputDir ,"svTable.csv"),row.names = FALSE)
 
