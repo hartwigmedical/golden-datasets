@@ -60,29 +60,29 @@ def helpMessage() {
 
 
   Inputs:
-    --snv [file]
-    --indel [file]               Path to design file for extended analysis
-    --sv [file]                  Specifies that the input is single-end reads
-    --truth [file]
-    --truthSv [file]
-    --snvIndel [file]
-    --fasta [file]
-    --snvSname []
-    --svSname
-    --truthSnvSname
-    --truthSvSname
-    --targetBed [file]
+    --snv [file]                Snv file if snv & indel are splitted (.vcf)
+    --indel [file]              Indel file if snv & indel are splitted (.vcf)
+    --snvIndel [file]           Snv & Indel file (.vcf)
+    --sv [file]                 Structural variant file (.vcf or .tsv)
+    --truth [file]              Truth file for SNV & Indel Calling (.vcf)
+    --truthSv [file]            Truth file for SV Calling (.vcf or .tsv)
+    --fasta [file]              Reference genome file (.fa)
+    --snvSname [str]            Sample Name found in the snvIndel file
+    --svSname [str]             Sample Name found in the SV vcf
+    --truthSnvSname [str]       Sample Name found in the snvIndel truth file
+    --truthSvSname [str]        Sample Name found in the SV truth file
+    --targetBed [file]          Target file if WES / Capture (.bed)
 
   Main Options:
-    --noPass [bool]
-    --noPassTruth [bool]
+    --noPass [bool]             Keep all variants from test files even those without PASS tag
+    --noPassTruth [bool]        Keep all variants from truth files even those without PASS tag
     --keep [bool]
 
 
   Other options:
     --outDir [file]               The output directory where the results will be saved
     -name [str]                   Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
-    --cpu
+    --cpu [str]                 Number of CPU available for analysis
 
   ======================================================================
   Available Profiles
@@ -363,6 +363,8 @@ process PrepareAndNormalize {
 process benchmarkSNV {
     label "snv"
 
+    publishDir "${params.outDir}/SNV", mode: params.publishDirMode
+
     //TODO: add CPU label
     input:
     file(snvIndel) from snvIndelNormCh
@@ -372,7 +374,7 @@ process benchmarkSNV {
     val(outName) from outNameCh
 
     output:
-    file("*.stats.csv") into sompySnvCh
+    file("*.stats.csv") into sompySnvCh,plotSnvCh
 
     script:
     targetArg = params.targetBed ? " -R ${target} ": ''
@@ -390,12 +392,14 @@ process benchmarkSNV {
  process ingestSV {
      label "sv"
 
+     publishDir "${params.outDir}/SV", mode: params.publishDirMode
+
      input:
      file(sv) from svCh
      val(svSname) from svSnameCh
 
      output:
-     file("sv_dataframe.csv") into svDf
+     file("sv_dataframe.csv") into svDf,plotSvTestCh
 
      script:
      svSnameArg = params.svSname ? " -samplename ${svSname} ": ''
@@ -407,12 +411,14 @@ process benchmarkSNV {
  process ingestSvTruth {
      label "sv"
 
+     publishDir "${params.outDir}/SV", mode: params.publishDirMode
+
      input:
      file(truth) from truthSvPassCh
      val(truthSvSname) from truthSvSnameCh
 
      output:
-     file("truth_sv_dataframe.csv") into truthSvDf
+     file("truth_sv_dataframe.csv") into truthSvDf,plotSvTruthCh
 
      script:
      truthSvSnameArg = params.truthSvSname ? " -samplename ${truthSvSname} ": ''
@@ -421,15 +427,17 @@ process benchmarkSNV {
      """
  }
 
- process compareTruthSv {
+ process benchmarkSV {
      label "sv"
+
+     publishDir "${params.outDir}/SV", mode: params.publishDirMode
 
      input:
      file(svDf) from svDf
-     val(truthSvDf) from truthSvDf
+     file(truthSvDf) from truthSvDf
 
      output:
-     file("SV_benchmark_results.csv") into svResultsCh
+     file("SV_benchmark_results.csv") into svResultsCh,plotSvCh
 
      script:
      truthSvSnameArg = params.truthSvSname ? " -samplename ${params.truthSvSname} ": ''
@@ -438,32 +446,42 @@ process benchmarkSNV {
      """
  }
 
-/**********
- * FastQC *
- **********/
+ process plotSNV {
+     label "plots"
 
-// process fastqc {
-//   label 'fastqc'
-//   label 'lowMem'
-//   label 'lowCpu'
-//
-//   tag "${prefix}"
-//   publishDir "${params.outDir}/fastqc", mode: 'copy'
-//
-//   input:
-//   set val(prefix), file(reads) from rawReadsFastqcCh
-//
-//   output:
-//   file "*_fastqc.{zip,html}" into fastqcResultsCh
-//   file "v_fastqc.txt" into fastqcVersionCh
-//
-//   script:
-//   """
-//   fastqc -q $reads
-//   fastqc --version > v_fastqc.txt
-//   """
-// }
+     publishDir "${params.outDir}/SNV", mode: params.publishDirMode
 
+     input:
+     file(statsSNV) from plotSnvCh
+     val(outName) from outNameCh
+
+     output:
+     file("*") into snvPlotsCh
+
+     script:
+     """
+     plots_benchmarking_snv.R -b ${statsSNV} -o ${outName}
+     """
+ }
+
+ process plotSV {
+     label "plots"
+
+     publishDir "${params.outDir}/SV", mode: params.publishDirMode
+
+     input:
+     file(statsSV) from plotSvCh
+     file(truthSvDf) from plotSvTruthCh
+     val(outName) from outNameCh
+
+     output:
+     file("*") into svPlotsCh
+
+     script:
+     """
+     plots_benchmarking_SV.R -b ${statsSV} -t ${truthSvDf} -o ${outName}
+     """
+ }
 
 workflow.onComplete {
 
