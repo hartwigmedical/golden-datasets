@@ -40,24 +40,21 @@ def helpMessage() {
   ======================================================================
 
     Usage:
-    nextflow run main.nf -t, --truth truth_snv_file.vcf
-        -s, --snv snv.vcf
-        -i, --indel indel.vcf
-        -m, --snvindel indels_and_vcfs.vcf
-        -e, --target_bed bed file containing regions to assess
-        -v, --sv sv.vcf
-        -u, --truth_sv truth_sv.vcf
-        -f, --fasta ref_fasta.fa
-        -d, --outdir /OUTPUT_DIR/PATH
-        -o, --outname output file name
-        -n, --sname vcf sample name
-        -a, --truth_sv_sname sample name for truth sv if different
-        -b, --truth_snv_sname sample name for truth snv if different
-        -p, --no_pass keep the pass variants and other variants in test file
-        -p, --no_pass_truth keep the pass variants and other variants in truth file
-        -c, --cpu number of threads
-        -k, --keep (to keep intermediates files)
-
+    nextflow run main.nf \
+        -profile multiconda \
+        --snvIndel myvariants.vcf.gz \
+        --truth truth.snv_indel.vcf.gz \
+        --snvIndelSname mySname \
+        --truthSnvSname myTruthSname \
+        --sv SV.vcf.gz \
+        --svSname svSname \
+        --truthSv truth.sv.vcf.gz \
+        --truthSvSname truthSvSname \
+        --fasta hg19.fa \
+        --targetBed targets.bed \
+        --outName test \
+        --condaCacheDir condaEnvsFolder \
+        -resume
 
   Inputs:
     --snv [file]                Snv file if snv & indel are splitted (.vcf)
@@ -76,7 +73,6 @@ def helpMessage() {
   Main Options:
     --noPass [bool]             Keep all variants from test files even those without PASS tag
     --noPassTruth [bool]        Keep all variants from truth files even those without PASS tag
-    --keep [bool]
 
 
   Other options:
@@ -121,29 +117,29 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
  * CHANNELS *
  ************/
 // TODO: make sample plan work
-samplePlanPathCh = params.samplePlan ? Channel.fromPath(params.samplePlan): Channel.empty()
-samplePlanCh = samplePlanPathCh
-     .splitCsv(header:true)
-     .map { row ->
-        [
-            type: row.TYPE,
-            sampleFile: file(row.PATH),
-            sampleName: row.SNAME,
-            truthFile: file(row.TRUTH),
-            truthSampleName: row.TRUTH_SNAME
-        ]
-    }.dump(tag : "samplePlanCh")
-
-// Branching samplePlan according to their compression state
-samplePlanCh.branch{ row ->
-    rawSamplesCh: row.sampleFile=~ /.*vcf$/ || row.truthFile=~ /.*vcf$/
-    compressSamplesCh: row.sampleFile=~ /.*gz$/ && row.truthFile=~ /.*gz$/
-}.set { samplePlanForks }
-
-(rawSamplesCh, compressSamplesCh) = [
-    samplePlanForks.rawSamplesCh.dump(tag: "rawSamplesCh"),
-    samplePlanForks.compressSamplesCh.dump(tag: "compressSamplesCh")
-]
+// samplePlanPathCh = params.samplePlan ? Channel.fromPath(params.samplePlan): Channel.empty()
+// samplePlanCh = samplePlanPathCh
+//      .splitCsv(header:true)
+//      .map { row ->
+//         [
+//             type: row.TYPE,
+//             sampleFile: file(row.PATH),
+//             sampleName: row.SNAME,
+//             truthFile: file(row.TRUTH),
+//             truthSampleName: row.TRUTH_SNAME
+//         ]
+//     }.dump(tag : "samplePlanCh")
+//
+// // Branching samplePlan according to their compression state
+// samplePlanCh.branch{ row ->
+//     rawSamplesCh: row.sampleFile=~ /.*vcf$/ || row.truthFile=~ /.*vcf$/
+//     compressSamplesCh: row.sampleFile=~ /.*gz$/ && row.truthFile=~ /.*gz$/
+// }.set { samplePlanForks }
+//
+// (rawSamplesCh, compressSamplesCh) = [
+//     samplePlanForks.rawSamplesCh.dump(tag: "rawSamplesCh"),
+//     samplePlanForks.compressSamplesCh.dump(tag: "compressSamplesCh")
+// ]
 
 snvCh = params.snv ? Channel.of(file(params.snv)) : Channel.empty()
 indelCh = params.indel ? Channel.of(file(params.indel)) : Channel.empty()
@@ -165,7 +161,7 @@ targetBedCh = params.targetBed ? Channel.value(file(params.targetBed)) : "null"
 outNameCh = params.outName ? Channel.value(params.outName) : Channel.empty()
 //keepCh = params.keep ? : false
 
-outNameCh.dump(tag: "outNameCh")
+//outNameCh.dump(tag: "outNameCh")
 /*******************
  * Header log info *
  *******************/
@@ -250,26 +246,140 @@ log.info "======================================================="
 //
 // }
 //
-process chrHandling {
+annotateInputCh = snvIndelCh.combine(["snvIndel"]).mix(snvCh.combine(["snv"])).mix(indelCh.combine(["indel"])).mix(truthCh.combine(["truth"])).dump(tag:"testCh")
+
+//(annotateSnvAndIndelCh, annotateSnvIndelCh) = annotateInputCh.into(2)
+annotateSnvAndIndelCh = annotateInputCh
+
+// annotateSnameInputCh = snvIndelSnameCh.combine(["snvIndel"]).mix(snvSnameCh.combine(["snv"])).mix(indelSnameCh.combine(["indel"])).mix(truthSnvSnameCh.combine(["truth"])).dump(tag:"testSnameCh")
+
+// (annotateSnvAndIndelSnameCh, annotateSnvIndelSnameCh) = annotateSnameInputCh.into(2)
+
+renameChrCh = Channel.fromPath("assets/rename_chr.txt")
+
+//(renameChrSnvAndIndelCh, renameChrSnvIndelCh) = renameChrCh.into(2)
+renameChrSnvAndIndelCh = renameChrCh
+
+// process annotate {
+//     label "snv"
+//
+//     input:
+//     tuple file(vcf), val(annotateType) from annotateInputCh
+//     file (chrs) from renameChrCh
+//
+//     output:
+//     file("snvIndel.annotate.vcf.gz") into snvIndelAnnotateCh
+//     file("snv.annotate.vcf.gz") into snvAnnotateCh
+//     file("indel.annotate.vcf.gz") into indelAnnotateCh
+//     file("truth.annotate.vcf.gz") into truthAnnotateCh
+//
+//     script:
+//     """
+//     bcftools annotate -x INFO,^FORMAT/GT -o ${annotateType}.annotate.vcf.gz -Oz --rename-chrs rename_chr.txt ${vcf}
+//     """
+// }
+
+//annotateSnvAndIndelCh = annotateSnvAndIndelCh.dump(tag: "annotateSnvAndIndelCh")
+
+process checkSnvAndIndel {
     label "snv"
 
     input:
-    file(snvIndel) from snvIndelCh
-    file(truth) from truthCh
+    tuple file(vcf), val(annotateType), file(chrs) from annotateSnvAndIndelCh.combine(renameChrSnvAndIndelCh)
 
     output:
-    file("snv_indel_temp.vcf.gz") into snvIndelChrCh
-    file("truth_temp.vcf.gz") into truthChrCh
+    tuple val(annotateType), file("${annotateType}.annotate.vcf.gz") into annotateCh
 
     script:
     """
-    zcat ${snvIndel} | awk '{if(\$0 !~ /^#/) print "chr"\$0; else print \$0}' | awk '{gsub(/contig=\\<ID=/,"contig=<ID=chr"); print}' | awk '{gsub(/chrchr/,"chr"); print}' > snv_indel_temp.vcf
-    gzip snv_indel_temp.vcf
-
-    zcat ${truth} | awk '{if(\$0 !~ /^#/) print "chr"\$0; else print \$0}'| awk '{gsub(/contig=\\<ID=/,"contig=<ID=chr"); print}' | awk '{gsub(/chrchr/,"chr"); print}' > truth_temp.vcf
-    gzip truth_temp.vcf
+    bcftools annotate -x INFO,^FORMAT/GT -o ${annotateType}.annotate.vcf.gz -Oz --rename-chrs rename_chr.txt ${vcf}
     """
 }
+
+//annotateCh = annotateCh.dump(tag: "annotateCh")
+
+annotateCh.branch{ row ->
+    snvIndelCh: row[0]=~/snvIndel/
+        return row[1]
+    snvCh: row[0]=~/snv/
+        return row[1]
+    indelCh: row[0]=~/indel/
+        return row[1]
+    truthCh: row[0]=~/truth/
+        return row[1]
+    otherCh: true
+}.set { annotateForks }
+
+(snvCheckedCh, indelCheckedCh, snvIndelCheckedCh, truthCheckedCh, otherCheckedCh) = [annotateForks.snvCh,annotateForks.indelCh,annotateForks.snvIndelCh,annotateForks.truthCh,annotateForks.otherCh]
+
+process concat {
+    label "snv"
+
+    input:
+    file(snv) from snvCheckedCh
+    file(indel) from indelCheckedCh
+
+    output:
+    file("snv_indel.vcf.gz") into snvIndelMergedCh
+
+    script:
+    """
+    bcftools index ${snv}
+    bcftools index ${indel}
+    bcftools concat -a ${snv} ${indel} -O z -o snv_indel.vcf.gz --threads ${task.cpus}
+    """
+}
+
+// process checkSnvIndel {
+//     label "snv"
+//
+//     input:
+//     tuple file(vcf), val(annotateType) from annotateSnvIndelCh
+//     file (chrs) from renameChrSnvIndelCh
+//
+//     output:
+//     file("snvIndel.annotate.vcf.gz") into snvIndelAnnotateCh
+//     file("truth.annotate.vcf.gz") into truthAnnotateCh2
+//
+//     when:
+//     params.snvIndel
+//
+//     script:
+//     """
+//     bcftools annotate -x INFO,^FORMAT/GT -o ${annotateType}.annotate.vcf.gz -Oz --rename-chrs rename_chr.txt ${vcf}
+//     """
+// }
+// process chrHandling {
+//     label "snv"
+//
+//     input:
+//     file(snvIndel) from snvIndelCh
+//     file(truth) from truthCh
+//
+//     output:
+//     file("snv_indel_temp.vcf.gz") into snvIndelChrCh
+//     file("truth_temp.vcf.gz") into truthChrCh
+//
+//     script:
+//     """
+//     zcat ${snvIndel} | awk '{if(\$0 !~ /^#/) print "chr"\$0; else print \$0}' | awk '{gsub(/contig=\\<ID=/,"contig=<ID=chr"); print}' | awk '{gsub(/chrchr/,"chr"); print}' > snv_indel_temp.vcf
+//     gzip snv_indel_temp.vcf
+//
+//     zcat ${truth} | awk '{if(\$0 !~ /^#/) print "chr"\$0; else print \$0}'| awk '{gsub(/contig=\\<ID=/,"contig=<ID=chr"); print}' | awk '{gsub(/chrchr/,"chr"); print}' > truth_temp.vcf
+//     gzip truth_temp.vcf
+//     """
+// }
+
+// TODO: code error message if params.SNV &  params.Indel & params.SnvIndel
+
+//snvIndelMergedCh = snvIndelMergedCh.dump(tag: "snvIndelMergedCh")
+//snvIndelCheckedNewCh = snvIndelCheckedCh.ifEmpty([]).dump(tag: "snvIndelCheckedCh")
+//annotateCh = annotateCh.dump(tag: "annotateCh")
+
+//(snvIndelCheckedCh,snvIndelCheckedTestCh) = snvIndelCheckedCh.into(2)
+//(snvIndelMergedCh,snvIndelMergedTestCh) = snvIndelMergedCh.into(2)
+
+//snvIndelMergedTestCh.concat(snvIndelCheckedTestCh).dump(tag: "mixCh")
 
 
 process splitMultiSample {
@@ -278,21 +388,21 @@ process splitMultiSample {
     label "snv"
 
     input:
-    file(snvIndel) from snvIndelChrCh
-    file(truth) from truthChrCh
+    file(snvIndel) from snvIndelMergedCh.concat(snvIndelCheckedCh)
+    file(truth) from truthCheckedCh
     val(sname) from snvIndelSnameCh
     val(truthSnvSname) from truthSnvSnameCh
 
     output:
-    file("snv_indel_temp.sample.vcf.gz") into snvIndelSampleCh
-    file("truth_temp.sample.vcf.gz") into truthSampleCh
+    file("snv_indel.sample.vcf.gz") into snvIndelSampleCh
+    file("truth.sample.vcf.gz") into truthSampleCh
 
     script:
     """
     echo ${sname}
-    bcftools view -c1 --threads ${task.cpus} -O z -s ${sname} -o snv_indel_temp.sample.vcf.gz ${snvIndel}
+    bcftools view -c1 --threads ${task.cpus} -O z -s ${sname} -o snv_indel.sample.vcf.gz ${snvIndel}
 
-    bcftools view -c1 --threads ${task.cpus} -O z -s ${truthSnvSname} -o truth_temp.sample.vcf.gz ${truth}
+    bcftools view -c1 --threads ${task.cpus} -O z -s ${truthSnvSname} -o truth.sample.vcf.gz ${truth}
     """
 }
 
