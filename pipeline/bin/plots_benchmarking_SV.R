@@ -45,7 +45,7 @@ if (is.null(opt$bsc) && is.null(opt$charite) && is.null(opt$curie) && is.null(op
 # 
 # bscTable=read.table("/bioinfo/users/tgutman/Documents/Tom/EUCANCan/golden-datasets/pipeline/work/16/b93353413aff983bc6c81a9f83fdc5/SV_benchmark_results.csv",header=TRUE,sep =",",stringsAsFactors = FALSE)
   
-  
+# bscTable=read.table("/bioinfo/users/tgutman/Documents/Tom/EUCANCan/golden-datasets/pipeline/work/55/fa58c4372a84530d33a89a24c976da/SV_benchmark_results.csv",header=TRUE,sep =",",stringsAsFactors = FALSE)
 
 svTable=data.frame()
 
@@ -110,7 +110,7 @@ print(svTable,row.names = FALSE)
 # Transform svTable and extract only useful info
 tidySV=svTable %>% 
   filter(Bin != "All" & TIER == "tier3") %>% 
-  select(Bin,Center,starts_with("TP")& -"TP") %>% 
+  select(Bin,Center,starts_with("TP") & - "TP") %>% 
   mutate(Bin = case_when(Bin == "NaN" ~ "NaN",
                          Bin == "0-50" ~ "0-50",
                          Bin == "50-200" ~ "50-200",
