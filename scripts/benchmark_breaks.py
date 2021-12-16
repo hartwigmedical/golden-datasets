@@ -15,6 +15,12 @@ Rationale:
     choose the closest one, and not allow for its use for a later comparison. 
     
 
+Usage:
+
+python TEST_DATAFRAME TRUTH_DATAFRAME -w "1,2,5,10,50,100,200" -metrics OUTPUT_TABLE
+
+-w flag are the windows of resolution used to consider as TP the variant in comparison with the position in the truth file.
+
 """
 
 
