@@ -2,6 +2,7 @@
 
 # Load libraries:
 library("tidyverse")
+library("DT")
 library("optparse")
 
 
@@ -66,11 +67,20 @@ if (!is.null(opt$oicr)){
     snvTable=rbind(snvTable,oicrTable)
 }
 
+#setwd("/bioinfo/users/tgutman/Documents/Tom/EUCANCan/Benchmark/colo829/results/CURIE/COLO829_curie_211130_nextflow")
+
+#snvTable=read.table("SNV/COLO829_curie_211130_nextflow.stats.csv",header=TRUE,sep=",")
+
+#snvTable$Node="Curie"
+#snvTable=snvTable[,c("Node","type","total.truth","total.query","tp","fp","fn","recall","precision")]
+
 print(snvTable)
 
 # Compute F1 + order factors
 snvTable=snvTable %>% 
-    mutate(F1 = (2*(precision*recall)/(precision+recall))) %>% 
+    mutate(recall = round(recall,3)) %>% 
+    mutate(precision = round(precision,3)) %>% 
+    mutate(F1 = round(2*(precision*recall)/(precision+recall),3)) %>% 
     mutate(type=factor(type,levels=c("SNVs","indels","records"))) %>% 
     mutate(Node = case_when(Node == "BSC" ~ "Node 1",
                             Node == "Curie" ~ "Node 2",
@@ -79,7 +89,9 @@ snvTable=snvTable %>%
                             Node == "OICR" ~ "Node 5")) %>% 
     mutate(Node=factor(Node,levels=c("Node 1", "Node 2", "Node 3", "Node 4", "Node 5")))
 
-write.table(snvTable,file = paste0(opt$outputDir ,"snvTable.csv"))
+datatable(snvTable)
+
+write.table(snvTable,file = paste0(opt$outputDir ,"_snvTable.csv"))
 
 # Transform table + order factors
 tidySnv=snvTable %>%

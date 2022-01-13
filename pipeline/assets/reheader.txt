@@ -1,0 +1,436 @@
+##fileformat=VCFv4.1
+##FORMAT=<ID=DP_REF_sid,Number=1,Type=Integer,Description="Read depth of ref allele, sid">
+##FORMAT=<ID=DP_ALT_sid,Number=1,Type=Integer,Description="Read depth of alt allele, sid">
+##FORMAT=<ID=VAF_sid,Number=1,Type=Integer,Description="Variant allele frequency sid">
+##FORMAT=<ID=DP_REF_smu,Number=1,Type=Integer,Description="Read depth of ref allele Smufin">
+##FORMAT=<ID=DP_ALT_smu,Number=1,Type=Integer,Description="Read depth of alt allele Smufin">
+##FORMAT=<ID=VAF_smu,Number=1,Type=Integer,Description="Variant allele frequency Smufin">
+##FORMAT=<ID=DP_REF_pin,Number=1,Type=Integer,Description="Read depth of ref allele in caveman">
+##FORMAT=<ID=DP_ALT_pin,Number=1,Type=Integer,Description="Read depth of alt allele in caveman">
+##FORMAT=<ID=VAF_pin,Number=1,Type=Float,Description="VAF in caveman">
+##FORMAT=<ID=DP_REF_pla,Number=1,Type=Integer,Description="Read depth of ref allele in mutect">
+##FORMAT=<ID=DP_ALT_pla,Number=1,Type=Integer,Description="Read depth of alt allele in mutect">
+##FORMAT=<ID=VAF_pla,Number=1,Type=Float,Description="VAF in mutect">
+##FORMAT=<ID=DP_REF_sva,Number=1,Type=Integer,Description="Read depth of ref allele in muse">
+##FORMAT=<ID=DP_ALT_sva,Number=1,Type=Integer,Description="Read depth of alt allele in muse">
+##FORMAT=<ID=VAF_sva,Number=1,Type=Float,Description="VAF in muse">
+##FORMAT=<ID=GQ_pla,Number=.,Type=Integer,Description="Genotype quality as phred score">
+##FORMAT=<ID=GOF_pla,Number=.,Type=Float,Description="Goodness of fit value">
+##FORMAT=<ID=LO_sva,Number=1,Type=Float,Description="Log-odds that this variant is real vs artifact">
+##FORMAT=<ID=LR_sva,Number=1,Type=Float,Description="Log-odds that this variant is AF=0 vs AF>=0.5">
+##FORMAT=<ID=AD,Number=.,Type=Integer,Description="Allelic depths for the ref and alt alleles in the order listed">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth (reads with MQ=255 or with bad mates are filtered)">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+##FORMAT=<ID=GT,Number=.,Type=String,Description="Genotype">
+##FORMAT=<ID=MIN_DP,Number=1,Type=Integer,Description="Minimum DP observed within the GVCF block">
+##FORMAT=<ID=PGT,Number=1,Type=String,Description="Physical phasing haplotype information, describing how the alternate alleles are phased in relation to one another">
+##FORMAT=<ID=PID,Number=1,Type=String,Description="Physical phasing ID information, where each unique ID within a given sample (but not across samples) connects records within a phasing group">
+##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification">
+##FORMAT=<ID=SB,Number=4,Type=Integer,Description="Per-sample component statistics which comprise the Fisher's Exact Test to detect strand bias.">
+##FORMAT=<ID=AF,Number=A,Type=Float,Description="Allele fractions of alternate alleles in the tumor">
+##FORMAT=<ID=F1R2,Number=R,Type=Integer,Description="Count of reads in F1R2 pair orientation supporting each allele">
+##FORMAT=<ID=F2R1,Number=R,Type=Integer,Description="Count of reads in F2R1 pair orientation supporting each allele">
+##FORMAT=<ID=PS,Number=1,Type=Integer,Description="Phasing set (typically the position of the first variant in the set)">
+##FORMAT=<ID=DP_REF_avg,Number=1,Type=Integer,Description="Read depth of ref allele, AVERAGE from all programs">
+##FORMAT=<ID=DP_ALT_avg,Number=1,Type=Integer,Description="Read depth of alt allele, AVERAGE from all programs">
+##FORMAT=<ID=DP_avg,Number=1,Type=Integer,Description="Approximate read depth, AVERAGE values (sum of alt and ref allelic depths)">
+##FORMAT=<ID=DP_std,Number=1,Type=Float,Description="Standard deviation of DP (sum of alt and ref allelic depths)">
+##FORMAT=<ID=VAF_avg,Number=1,Type=Float,Description="Variant allele frequency, AVERAGE (alt allele / DP)">
+##FORMAT=<ID=DP_REF_cav,Number=1,Type=Integer,Description="Read depth of ref allele in caveman">
+##FORMAT=<ID=DP_ALT_cav,Number=1,Type=Integer,Description="Read depth of alt allele in caveman">
+##FORMAT=<ID=VAF_cav,Number=1,Type=Float,Description="VAF in caveman">
+##FORMAT=<ID=DP_REF_mut,Number=1,Type=Integer,Description="Read depth of ref allele in mutect">
+##FORMAT=<ID=DP_ALT_mut,Number=1,Type=Integer,Description="Read depth of alt allele in mutect">
+##FORMAT=<ID=VAF_mut,Number=1,Type=Float,Description="VAF in mutect">
+##FORMAT=<ID=DP_REF_g4m2,Number=1,Type=Integer,Description="Read depth of ref allele in gatk4m2">
+##FORMAT=<ID=DP_ALT_g4m2,Number=1,Type=Integer,Description="Read depth of alt allele in gatk4m2">
+##FORMAT=<ID=VAF_g4m2,Number=1,Type=Float,Description="VAF in g4atkm2">
+##FORMAT=<ID=DP_REF_str,Number=1,Type=Integer,Description="Read depth of ref allele in strelka">
+##FORMAT=<ID=DP_ALT_str,Number=1,Type=Integer,Description="Read depth of alt allele in strelka">
+##FORMAT=<ID=VAF_str,Number=1,Type=Float,Description="VAF in strelka">
+##FORMAT=<ID=DP_REF_mus,Number=1,Type=Integer,Description="Read depth of ref allele in muse">
+##FORMAT=<ID=DP_ALT_mus,Number=1,Type=Integer,Description="Read depth of alt allele in muse">
+##FORMAT=<ID=VAF_mus,Number=1,Type=Float,Description="VAF in muse">
+##FORMAT=<ID=BQ_mut,Number=A,Type=Float,Description="Average base quality for reads supporting alleles. From mutect">
+##FORMAT=<ID=DP_REF_lan,Number=1,Type=Integer,Description="Read depth of ref allele in lancet">
+##FORMAT=<ID=DP_ALT_lan,Number=1,Type=Integer,Description="Read depth of alt allele in lancet">
+##FORMAT=<ID=VAF_lan,Number=1,Type=Float,Description="Read depth of alt allele in lancet">
+##FORMAT=<ID=MBQ_g4m2,Number=A,Type=Float,Description="median base quality. From gatk4m2">
+##FORMAT=<ID=MMQ_g4m2,Number=A,Type=Float,Description="median mapping quality. From gatk4m2">
+##FORMAT=<ID=BQ_REF_mus,Number=1,Type=Integer,Description="Average base quality for reads supporting alleles. From muse (BQ)">
+##FORMAT=<ID=BQ_ALT_mus,Number=1,Type=Integer,Description="Average base quality for reads supporting alleles. From muse (BQ)">
+##FORMAT=<ID=RABQ,Number=2,Type=Integer,Description="Raw allelic base quality">
+##FORMAT=<ID=RAD,Number=2,Type=Integer,Description="Raw allelic depth">
+##FORMAT=<ID=RC_CNT,Number=6,Type=Integer,Description="Read context counts [Full, Partial, Core, Realigned, Reference, Total]">
+##FORMAT=<ID=RC_IPC,Number=1,Type=Integer,Description="Read context improper pair count">
+##FORMAT=<ID=RC_JIT,Number=3,Type=Integer,Description="Read context jitter [Shortened, Lengthened, QualityPenalty]">
+##FORMAT=<ID=RC_QUAL,Number=6,Type=Integer,Description="Read context quality [Full, Partial, Core, Realigned, Reference, Total]">
+##FORMAT=<ID=RDP,Number=1,Type=Integer,Description="Raw read depth">
+##FILTER=<ID=LowQual,Description="Low quality">
+##FILTER=<ID=PASS,Description="Accept as a confident somatic mutation identified in at least 3 growths where the 4 growth has a no call">
+##FILTER=<ID=FAIL,Description="Fail the site if all alleles fail but for different reasons.">
+##FILTER=<ID=base_qual,Description="alt median base quality">
+##FILTER=<ID=clustered_events,Description="Clustered events observed in the tumor">
+##FILTER=<ID=contamination,Description="contamination">
+##FILTER=<ID=duplicate,Description="evidence for alt allele is overrepresented by apparent duplicates">
+##FILTER=<ID=fragment,Description="abs(ref - alt) median fragment length">
+##FILTER=<ID=germline,Description="Evidence indicates this site is germline, not somatic">
+##FILTER=<ID=haplotype,Description="Variant near filtered variant on same haplotype.">
+##FILTER=<ID=low_allele_frac,Description="Allele fraction is below specified threshold">
+##FILTER=<ID=map_qual,Description="ref - alt median mapping quality">
+##FILTER=<ID=multiallelic,Description="Site filtered because too many alt alleles pass tumor LOD">
+##FILTER=<ID=n_ratio,Description="Ratio of N to alt exceeds specified ratio">
+##FILTER=<ID=normal_artifact,Description="artifact_in_normal">
+##FILTER=<ID=orientation,Description="orientation bias detected by the orientation bias mixture model">
+##FILTER=<ID=panel_of_normals,Description="Blacklisted site in panel of normals">
+##FILTER=<ID=position,Description="median distance of alt variants from end of reads">
+##FILTER=<ID=possible_numt,Description="Allele depth is below expected coverage of NuMT in autosome">
+##FILTER=<ID=slippage,Description="Site filtered due to contraction of short tandem repeat region">
+##FILTER=<ID=strand_bias,Description="Evidence for alt allele comes from one read direction only">
+##FILTER=<ID=strict_strand,Description="Evidence for alt allele is not represented in both directions">
+##FILTER=<ID=weak_evidence,Description="Mutation does not meet likelihood threshold">
+##FILTER=<ID=dedup,Description="Variant was removed as duplicate">
+##FILTER=<ID=max_germline_alt_support,Description="Excess germline alt support">
+##FILTER=<ID=max_germline_rel_raw_base_qual,Description="Excess germline relative quality">
+##FILTER=<ID=max_germline_vaf,Description="Excess germline VAF">
+##FILTER=<ID=min_germline_depth,Description="Insufficient germline depth">
+##FILTER=<ID=min_tumor_qual,Description="Insufficient tumor quality">
+##FILTER=<ID=min_tumor_vaf,Description="Insufficient tumor VAF">
+##FILTER=<ID=PON,Description="site found in panel of normals">
+##INFO=<ID=MQ_str,Number=1,Type=Float,Description="RMS Mapping Quality. From strelka">
+##INFO=<ID=MQ0_str,Number=1,Type=Integer,Description="Total Mapping Quality Zero Reads. From strelka">
+##INFO=<ID=SomaticEVS_str,Number=1,Type=Float,Description="Somatic Empirical Variant Score (EVS) expressing the phred-scaled probability of the call being a false positive observation.. From strelka">
+##INFO=<ID=ASMD_cav,Number=1,Type=Float,Description="A soft flag median alignement score of reads showing the variant allele. From caveman">
+##INFO=<ID=CLPM_cav,Number=1,Type=Float,Description="A soft flag median number of soft clipped bases in variant supporting reads. From caveman">
+##INFO=<ID=IN_PON_g4m2,Number=0,Type=Flag,Description="site found in panel of normals. From gatk4m2">
+##INFO=<ID=FETS_lan,Number=1,Type=Float,Description="Read depth of alt allele in lancet">
+##INFO=<ID=SB_lan,Number=1,Type=Float,Description="Read depth of alt allele in lancet">
+##INFO=<ID=FILTER_lan,Number=.,Type=String,Description="FILTER from lancet">
+##INFO=<ID=FILTER_mut,Number=.,Type=String,Description="FILTER from mutect">
+##INFO=<ID=FILTER_cav,Number=.,Type=String,Description="FILTER from caveman">
+##INFO=<ID=FILTER_g4m2,Number=.,Type=String,Description="FILTER from gatk4m2">
+##INFO=<ID=FILTER_mus,Number=.,Type=String,Description="FILTER from muse">
+##INFO=<ID=FILTER_str,Number=.,Type=String,Description="FILTER from strelka">
+##INFO=<ID=NPROGS,Number=1,Type=Integer,Description="Number of programs that detected the variant">
+##INFO=<ID=PROGS,Number=.,Type=String,Description="Programs that detected the variant">
+##INFO=<ID=QUAL_pin,Number=1,Type=Integer,Description="SUM_MS from pindel">
+##INFO=<ID=S1_pin,Number=1,Type=Integer,Description="S1">
+##INFO=<ID=S2_pin,Number=1,Type=Float,Description="S2">
+##INFO=<ID=MMLQ_pla,Number=1,Type=Float,Description="Median minimum base quality for bases around variant">
+##INFO=<ID=HP_pla,Number=1,Type=Integer,Description="Homopolymer run length around variant locus">
+##INFO=<ID=MQ_pla,Number=.,Type=Float,Description="Root mean square of mapping qualities of reads at the variant position">
+##INFO=<ID=QD_pla,Number=1,Type=Float,Description="Variant-quality/read-depth for this variant">
+##INFO=<ID=RU_str,Number=1,Type=String,Description="Smallest repeating sequence unit in inserted or deleted sequence">
+##INFO=<ID=RC_str,Number=1,Type=Integer,Description="Number of times RU repeats in the reference allele">
+##INFO=<ID=IC_str,Number=1,Type=Integer,Description="Number of times RU repeats in the indel allele">
+##INFO=<ID=IHP_str,Number=1,Type=Integer,Description="Largest reference interrupted homopolymer length intersecting with the indel">
+##INFO=<ID=LOD_sva,Number=1,Type=Float,Description="Log of the odds that variant is real vs artifact">
+##INFO=<ID=REPSEQ_sva,Number=1,Type=String,Description="Repeat sequence near the variant">
+##INFO=<ID=MAPQ_sva,Number=1,Type=Integer,Description="Mapping quality (BWA-MEM) of the assembled contig">
+##INFO=<ID=FILTER_pin,Number=.,Type=String,Description="FILTER from pindel">
+##INFO=<ID=FILTER_pla,Number=.,Type=String,Description="FILTER from platypus">
+##INFO=<ID=FILTER_sva,Number=.,Type=String,Description="FILTER from svaba">
+##INFO=<ID=BaseQRankSum,Number=1,Type=Float,Description="Z-score from Wilcoxon rank sum test of Alt Vs. Ref base qualities">
+##INFO=<ID=ClippingRankSum,Number=1,Type=Float,Description="Z-score From Wilcoxon rank sum test of Alt vs. Ref number of hard clipped bases">
+##INFO=<ID=DB,Number=0,Type=Flag,Description="dbSNP Membership">
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth; some reads may have been filtered">
+##INFO=<ID=DS,Number=0,Type=Flag,Description="Were any of the samples downsampled?">
+##INFO=<ID=END,Number=1,Type=Integer,Description="Stop position of the interval">
+##INFO=<ID=HaplotypeScore,Number=1,Type=Float,Description="Consistency of the site with at most two segregating haplotypes">
+##INFO=<ID=InbreedingCoeff,Number=1,Type=Float,Description="Inbreeding coefficient as estimated from the genotype likelihoods per-sample when compared against the Hardy-Weinberg expectation">
+##INFO=<ID=MLEAC,Number=A,Type=Integer,Description="Maximum likelihood expectation (MLE) for the allele counts (not necessarily the same as the AC), for each ALT allele, in the same order as listed">
+##INFO=<ID=MLEAF,Number=A,Type=Float,Description="Maximum likelihood expectation (MLE) for the allele frequency (not necessarily the same as the AF), for each ALT allele, in the same order as listed">
+##INFO=<ID=MQ,Number=1,Type=Float,Description="RMS Mapping Quality">
+##INFO=<ID=MQ0,Number=1,Type=Integer,Description="Total Mapping Quality Zero Reads">
+##INFO=<ID=MQRankSum,Number=1,Type=Float,Description="Z-score From Wilcoxon rank sum test of Alt vs. Ref read mapping qualities">
+##INFO=<ID=ReadPosRankSum,Number=1,Type=Float,Description="Z-score from Wilcoxon rank sum test of Alt vs. Ref read position bias">
+##INFO=<ID=GROWTHS_COUNT,Number=1,Type=Integer,Description="Number of Growths calling this variant event">
+##INFO=<ID=GROWTHS,Number=.,Type=String,Description="Somatic mutation called in a growth">
+##INFO=<ID=TYPE,Number=.,Type=String,Description="Type of Somatic Event INDEL or SNV">
+##INFO=<ID=Illumina,Number=0,Type=Flag,Description="Somatic mutation called in the Illumina sample">
+##INFO=<ID=EBI,Number=0,Type=Flag,Description="Somatic mutation called in the EPleasance sample">
+##INFO=<ID=TGEN,Number=0,Type=Flag,Description="Somatic mutation called in the TGEN sample">
+##INFO=<ID=GSC,Number=0,Type=Flag,Description="Somatic mutation called in the GSC sample">
+##INFO=<ID=EFF,Number=.,Type=String,Description="Predicted effects for this variant.Format: 'Effect ( )'">
+##INFO=<ID=AS_FilterStatus,Number=A,Type=String,Description="Filter status for each allele, as assessed by ApplyRecalibration. Note that the VCF filter ">
+##INFO=<ID=AS_SB_TABLE,Number=1,Type=String,Description="Allele-specific forward/reverse read counts for strand bias tests. Includes the reference and alleles separated by |.">
+##INFO=<ID=AS_UNIQ_ALT_READ_COUNT,Number=A,Type=Integer,Description="Number of reads with unique start and mate end positions for each alt at a variant site">
+##INFO=<ID=CONTQ,Number=1,Type=Float,Description="Phred-scaled qualities that alt allele are not due to contamination">
+##INFO=<ID=ECNT,Number=1,Type=Integer,Description="Number of events in this haplotype">
+##INFO=<ID=GERMQ,Number=1,Type=Integer,Description="Phred-scaled quality that alt alleles are not germline variants">
+##INFO=<ID=MBQ,Number=R,Type=Integer,Description="median base quality">
+##INFO=<ID=MFRL,Number=R,Type=Integer,Description="median fragment length">
+##INFO=<ID=MMQ,Number=R,Type=Integer,Description="median mapping quality">
+##INFO=<ID=MPOS,Number=A,Type=Integer,Description="median distance from end of read">
+##INFO=<ID=NALOD,Number=A,Type=Float,Description="Negative log 10 odds of artifact in normal with same allele fraction as tumor">
+##INFO=<ID=NCount,Number=1,Type=Integer,Description="Count of N bases in the pileup">
+##INFO=<ID=NLOD,Number=A,Type=Float,Description="Normal log 10 likelihood ratio of diploid het or hom alt genotypes">
+##INFO=<ID=OCM,Number=1,Type=Integer,Description="Number of alt reads whose original alignment doesn't match the current contig.">
+##INFO=<ID=PON,Number=0,Type=Flag,Description="site found in panel of normals">
+##INFO=<ID=POPAF,Number=A,Type=Float,Description="negative log 10 population allele frequencies of alt alleles">
+##INFO=<ID=ROQ,Number=1,Type=Float,Description="Phred-scaled qualities that alt allele are not due to read orientation artifact">
+##INFO=<ID=RPA,Number=R,Type=Integer,Description="Number of times tandem repeat unit is repeated, for each allele (including reference)">
+##INFO=<ID=RU,Number=1,Type=String,Description="Tandem repeat unit (bases)">
+##INFO=<ID=SEQQ,Number=1,Type=Integer,Description="Phred-scaled quality that alt alleles are not sequencing errors">
+##INFO=<ID=STR,Number=0,Type=Flag,Description="Variant is a short tandem repeat">
+##INFO=<ID=STRANDQ,Number=1,Type=Integer,Description="Phred-scaled quality of strand bias artifact">
+##INFO=<ID=STRQ,Number=1,Type=Integer,Description="Phred-scaled quality that alt alleles in STRs are not polymerase slippage errors">
+##INFO=<ID=TLOD,Number=A,Type=Float,Description="Log 10 likelihood ratio score of variant existing versus not existing">
+##INFO=<ID=ANN,Number=.,Type=String,Description="Functional annotations ">
+##INFO=<ID=LOF,Number=.,Type=String,Description="Predicted loss of function effects for this variant.">
+##INFO=<ID=NMD,Number=.,Type=String,Description="Predicted nonsense mediated decay effects for this variant.">
+##INFO=<ID=BIALLELIC,Number=0,Type=Flag,Description="Variant is biallelic">
+##INFO=<ID=HOTSPOT,Number=0,Type=Flag,Description="Site is at a known hotspot location">
+##INFO=<ID=KT,Number=1,Type=String,Description="Forward/reverse kataegis id">
+##INFO=<ID=LPS,Number=1,Type=Integer,Description="Local Phase Set">
+##INFO=<ID=LRS,Number=1,Type=Integer,Description="Local Realignment Set">
+##INFO=<ID=MAPPABILITY,Number=1,Type=Float,Description="GEM mappability in 150 base window">
+##INFO=<ID=MH,Number=1,Type=String,Description="Microhomology">
+##INFO=<ID=MSG,Number=1,Type=Integer,Description="Mixed Somatic and Germline variants">
+##INFO=<ID=NEAR_HOTSPOT,Number=0,Type=Flag,Description="Variant within 5 bases of hotspot">
+##INFO=<ID=PII,Number=1,Type=Integer,Description="Phased inframe indel identifier">
+##INFO=<ID=PON_COUNT,Number=1,Type=Integer,Description="how many samples had the variant">
+##INFO=<ID=PON_MAX,Number=1,Type=Integer,Description="max depth">
+##INFO=<ID=PURPLE_AF,Number=1,Type=Float,Description="Purity adjusted variant allelic frequency">
+##INFO=<ID=PURPLE_CN,Number=1,Type=Float,Description="Purity adjusted copy number surrounding variant location">
+##INFO=<ID=PURPLE_GERMLINE,Number=1,Type=String,Description="Germline classification surrounding variant location">
+##INFO=<ID=PURPLE_MACN,Number=1,Type=Float,Description="Purity adjusted minor allele ploidy surrounding variant location">
+##INFO=<ID=PURPLE_VCN,Number=1,Type=Float,Description="Purity adjusted variant copy number">
+##INFO=<ID=RAM,Number=0,Type=Flag,Description="Right aligned microhomology">
+##INFO=<ID=RC,Number=1,Type=String,Description="Read context core">
+##INFO=<ID=RC_IDX,Number=1,Type=Integer,Description="Read context index">
+##INFO=<ID=RC_LF,Number=1,Type=String,Description="Read context left flank">
+##INFO=<ID=RC_MH,Number=1,Type=String,Description="Micro-homology at read context">
+##INFO=<ID=RC_NM,Number=1,Type=Integer,Description="Minimum number of events in read">
+##INFO=<ID=RC_REPC,Number=1,Type=Integer,Description="Repeat count at read context">
+##INFO=<ID=RC_REPS,Number=1,Type=String,Description="Repeat sequence at read context">
+##INFO=<ID=RC_RF,Number=1,Type=String,Description="Read context right flank">
+##INFO=<ID=REPORTED,Number=0,Type=Flag,Description="Variant is reported in the driver catalog">
+##INFO=<ID=REP_C,Number=1,Type=Integer,Description="Repeat sequence count">
+##INFO=<ID=REP_S,Number=1,Type=String,Description="Repeat sequence">
+##INFO=<ID=SEC,Number=6,Type=String,Description="SnpEff canonical transcript summary [Gene, Transcript, Effect, CodingEffect, HgvsCodingImpact, HgvsProteinImpact]">
+##INFO=<ID=SEW,Number=5,Type=String,Description="SnpEff worst transcript summary [Gene, Transcript, Effect, CodingEffect, GenesAffected]">
+##INFO=<ID=SUBCL,Number=1,Type=Float,Description="Non-zero subclonal likelihood">
+##INFO=<ID=TIER,Number=1,Type=String,Description="Tier: [HOTSPOT, PANEL, HIGH_CONFIDENCE, LOW_CONFIDENCE]">
+##INFO=<ID=TNC,Number=1,Type=String,Description="Tri-nucleotide context">
+##contig=<ID=1,length=249250621>
+##contig=<ID=2,length=243199373>
+##contig=<ID=3,length=198022430>
+##contig=<ID=4,length=191154276>
+##contig=<ID=5,length=180915260>
+##contig=<ID=6,length=171115067>
+##contig=<ID=7,length=159138663>
+##contig=<ID=8,length=146364022>
+##contig=<ID=9,length=141213431>
+##contig=<ID=10,length=135534747>
+##contig=<ID=11,length=135006516>
+##contig=<ID=12,length=133851895>
+##contig=<ID=13,length=115169878>
+##contig=<ID=14,length=107349540>
+##contig=<ID=15,length=102531392>
+##contig=<ID=16,length=90354753>
+##contig=<ID=17,length=81195210>
+##contig=<ID=18,length=78077248>
+##contig=<ID=19,length=59128983>
+##contig=<ID=20,length=63025520>
+##contig=<ID=21,length=48129895>
+##contig=<ID=22,length=51304566>
+##contig=<ID=X,length=155270560>
+##contig=<ID=Y,length=59373566>
+##contig=<ID=MT,length=16569>
+##contig=<ID=chr1,length=249250621>
+##contig=<ID=chr2,length=243199373>
+##contig=<ID=chr3,length=198022430>
+##contig=<ID=chr4,length=191154276>
+##contig=<ID=chr5,length=180915260>
+##contig=<ID=chr6,length=171115067>
+##contig=<ID=chr7,length=159138663>
+##contig=<ID=chr8,length=146364022>
+##contig=<ID=chr9,length=141213431>
+##contig=<ID=chr10,length=135534747>
+##contig=<ID=chr11,length=135006516>
+##contig=<ID=chr12,length=133851895>
+##contig=<ID=chr13,length=115169878>
+##contig=<ID=chr14,length=107349540>
+##contig=<ID=chr15,length=102531392>
+##contig=<ID=chr16,length=90354753>
+##contig=<ID=chr17,length=81195210>
+##contig=<ID=chr18,length=78077248>
+##contig=<ID=chr19,length=59128983>
+##contig=<ID=chr20,length=63025520>
+##contig=<ID=chr21,length=48129895>
+##contig=<ID=chr22,length=51304566>
+##contig=<ID=chrX,length=155270560>
+##contig=<ID=chrY,length=59373566>
+##contig=<ID=chrM,length=16571>
+##contig=<ID=chrMT,length=16569>
+##contig=<ID=chrGL000207.1,length=4262>
+##contig=<ID=chrGL000226.1,length=15008>
+##contig=<ID=chrGL000229.1,length=19913>
+##contig=<ID=chrGL000231.1,length=27386>
+##contig=<ID=chrGL000210.1,length=27682>
+##contig=<ID=chrGL000239.1,length=33824>
+##contig=<ID=chrGL000235.1,length=34474>
+##contig=<ID=chrGL000201.1,length=36148>
+##contig=<ID=chrGL000247.1,length=36422>
+##contig=<ID=chrGL000245.1,length=36651>
+##contig=<ID=chrGL000197.1,length=37175>
+##contig=<ID=chrGL000203.1,length=37498>
+##contig=<ID=chrGL000246.1,length=38154>
+##contig=<ID=chrGL000249.1,length=38502>
+##contig=<ID=chrGL000196.1,length=38914>
+##contig=<ID=chrGL000248.1,length=39786>
+##contig=<ID=chrGL000244.1,length=39929>
+##contig=<ID=chrGL000238.1,length=39939>
+##contig=<ID=chrGL000202.1,length=40103>
+##contig=<ID=chrGL000234.1,length=40531>
+##contig=<ID=chrGL000232.1,length=40652>
+##contig=<ID=chrGL000206.1,length=41001>
+##contig=<ID=chrGL000240.1,length=41933>
+##contig=<ID=chrGL000236.1,length=41934>
+##contig=<ID=chrGL000241.1,length=42152>
+##contig=<ID=chrGL000243.1,length=43341>
+##contig=<ID=chrGL000242.1,length=43523>
+##contig=<ID=chrGL000230.1,length=43691>
+##contig=<ID=chrGL000237.1,length=45867>
+##contig=<ID=chrGL000233.1,length=45941>
+##contig=<ID=chrGL000204.1,length=81310>
+##contig=<ID=chrGL000198.1,length=90085>
+##contig=<ID=chrGL000208.1,length=92689>
+##contig=<ID=chrGL000191.1,length=106433>
+##contig=<ID=chrGL000227.1,length=128374>
+##contig=<ID=chrGL000228.1,length=129120>
+##contig=<ID=chrGL000214.1,length=137718>
+##contig=<ID=chrGL000221.1,length=155397>
+##contig=<ID=chrGL000209.1,length=159169>
+##contig=<ID=chrGL000218.1,length=161147>
+##contig=<ID=chrGL000220.1,length=161802>
+##contig=<ID=chrGL000213.1,length=164239>
+##contig=<ID=chrGL000211.1,length=166566>
+##contig=<ID=chrGL000199.1,length=169874>
+##contig=<ID=chrGL000217.1,length=172149>
+##contig=<ID=chrGL000216.1,length=172294>
+##contig=<ID=chrGL000215.1,length=172545>
+##contig=<ID=chrGL000205.1,length=174588>
+##contig=<ID=chrGL000219.1,length=179198>
+##contig=<ID=chrGL000224.1,length=179693>
+##contig=<ID=chrGL000223.1,length=180455>
+##contig=<ID=chrGL000195.1,length=182896>
+##contig=<ID=chrGL000212.1,length=186858>
+##contig=<ID=chrGL000222.1,length=186861>
+##contig=<ID=chrGL000200.1,length=187035>
+##contig=<ID=chrGL000193.1,length=189789>
+##contig=<ID=chrGL000194.1,length=191469>
+##contig=<ID=chrGL000225.1,length=211173>
+##contig=<ID=chrGL000192.1,length=547496>
+##contig=<ID=chrNC_007605,length=171823>
+##contig=<ID=chrhs37d5,length=35477943>
+##contig=<ID=chrU13369,length=42999>
+##contig=<ID=chrFR872717,length=7933>
+##contig=<ID=chrAF092932,length=8012>
+##contig=<ID=chrNC_001526,length=7905>
+##contig=<ID=chrNC_001357,length=7857>
+##contig=<ID=chrNC_003977,length=3215>
+##contig=<ID=chrNC_004102,length=9646>
+##contig=<ID=chrNC_009823,length=9711>
+##contig=<ID=chrNC_009824,length=9456>
+##contig=<ID=ID=NC_009825,length=9355>
+##contig=<ID=chrNC_009826,length=9343>
+##contig=<ID=chrNC_009334,length=172764>
+##contig=<ID=chrNC_006273,length=235646>
+##contig=<ID=chrNC_011800,length=8791>
+##contig=<ID=chrNC_001806,length=152261>
+##contig=<ID=chrERCC-00002,length=1061>
+##contig=<ID=chrERCC-00003,length=1023>
+##contig=<ID=chrERCC-00004,length=523>
+##contig=<ID=chrERCC-00009,length=984>
+##contig=<ID=chrERCC-00012,length=994>
+##contig=<ID=chrERCC-00013,length=808>
+##contig=<ID=chrERCC-00014,length=1957>
+##contig=<ID=chrERCC-00016,length=844>
+##contig=<ID=chrERCC-00017,length=1136>
+##contig=<ID=chrERCC-00019,length=644>
+##contig=<ID=chrERCC-00022,length=751>
+##contig=<ID=chrERCC-00024,length=536>
+##contig=<ID=chrERCC-00025,length=1994>
+##contig=<ID=chrERCC-00028,length=1130>
+##contig=<ID=chrERCC-00031,length=1138>
+##contig=<ID=chrERCC-00033,length=2022>
+##contig=<ID=chrERCC-00034,length=1019>
+##contig=<ID=chrERCC-00035,length=1130>
+##contig=<ID=chrERCC-00039,length=740>
+##contig=<ID=chrERCC-00040,length=744>
+##contig=<ID=chrERCC-00041,length=1122>
+##contig=<ID=chrERCC-00042,length=1023>
+##contig=<ID=chrERCC-00043,length=1023>
+##contig=<ID=chrERCC-00044,length=1156>
+##contig=<ID=chrERCC-00046,length=522>
+##contig=<ID=chrERCC-00048,length=992>
+##contig=<ID=chrERCC-00051,length=274>
+##contig=<ID=chrERCC-00053,length=1023>
+##contig=<ID=chrERCC-00054,length=274>
+##contig=<ID=chrERCC-00057,length=1021>
+##contig=<ID=chrERCC-00058,length=1136>
+##contig=<ID=chrERCC-00059,length=525>
+##contig=<ID=chrERCC-00060,length=523>
+##contig=<ID=chrERCC-00061,length=1136>
+##contig=<ID=chrERCC-00062,length=1023>
+##contig=<ID=chrERCC-00067,length=644>
+##contig=<ID=chrERCC-00069,length=1137>
+##contig=<ID=chrERCC-00071,length=642>
+##contig=<ID=chrERCC-00073,length=603>
+##contig=<ID=chrERCC-00074,length=522>
+##contig=<ID=chrERCC-00075,length=1023>
+##contig=<ID=chrERCC-00076,length=642>
+##contig=<ID=chrERCC-00077,length=273>
+##contig=<ID=chrERCC-00078,length=993>
+##contig=<ID=chrERCC-00079,length=644>
+##contig=<ID=chrERCC-00081,length=534>
+##contig=<ID=chrERCC-00083,length=1022>
+##contig=<ID=chrERCC-00084,length=994>
+##contig=<ID=chrERCC-00085,length=844>
+##contig=<ID=chrERCC-00086,length=1020>
+##contig=<ID=chrERCC-00092,length=1124>
+##contig=<ID=chrERCC-00095,length=521>
+##contig=<ID=chrERCC-00096,length=1107>
+##contig=<ID=chrERCC-00097,length=523>
+##contig=<ID=chrERCC-00098,length=1143>
+##contig=<ID=chrERCC-00099,length=1350>
+##contig=<ID=chrERCC-00104,length=2022>
+##contig=<ID=chrERCC-00108,length=1022>
+##contig=<ID=chrERCC-00109,length=536>
+##contig=<ID=chrERCC-00111,length=994>
+##contig=<ID=chrERCC-00112,length=1136>
+##contig=<ID=chrERCC-00113,length=840>
+##contig=<ID=chrERCC-00116,length=1991>
+##contig=<ID=chrERCC-00117,length=1136>
+##contig=<ID=chrERCC-00120,length=536>
+##contig=<ID=chrERCC-00123,length=1022>
+##contig=<ID=chrERCC-00126,length=1118>
+##contig=<ID=chrERCC-00130,length=1059>
+##contig=<ID=chrERCC-00131,length=771>
+##contig=<ID=chrERCC-00134,length=274>
+##contig=<ID=chrERCC-00136,length=1033>
+##contig=<ID=chrERCC-00137,length=537>
+##contig=<ID=chrERCC-00138,length=1024>
+##contig=<ID=chrERCC-00142,length=493>
+##contig=<ID=chrERCC-00143,length=784>
+##contig=<ID=chrERCC-00144,length=538>
+##contig=<ID=chrERCC-00145,length=1042>
+##contig=<ID=chrERCC-00147,length=1023>
+##contig=<ID=chrERCC-00148,length=494>
+##contig=<ID=chrERCC-00150,length=743>
+##contig=<ID=chrERCC-00154,length=537>
+##contig=<ID=chrERCC-00156,length=494>
+##contig=<ID=chrERCC-00157,length=1019>
+##contig=<ID=chrERCC-00158,length=1027>
+##contig=<ID=chrERCC-00160,length=743>
+##contig=<ID=chrERCC-00162,length=523>
+##contig=<ID=chrERCC-00163,length=543>
+##contig=<ID=chrERCC-00164,length=1022>
+##contig=<ID=chrERCC-00165,length=872>
+##contig=<ID=chrERCC-00168,length=1024>
+##contig=<ID=chrERCC-00170,length=1023>
+##contig=<ID=chrERCC-00171,length=505>
+##normal_sample=COLO829N
+##tumor_sample=COLO829T

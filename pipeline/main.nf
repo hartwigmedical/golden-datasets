@@ -53,6 +53,7 @@ def helpMessage() {
         --fasta hg19.fa \
         --targetBed targets.bed \
         --outName test \
+        --outDir /PATH/TO/RESULTS/
         --condaCacheDir condaEnvsFolder \
         -resume
 
@@ -159,6 +160,7 @@ fastaCh = params.fasta ? Channel.value(file(params.fasta)) : Channel.empty()
 targetBedCh = params.targetBed ? Channel.value(file(params.targetBed)) : "null"
 
 outNameCh = params.outName ? Channel.value(params.outName) : Channel.empty()
+outDirCh = params.outDir ? Channel.value(params.outDir) : Channel.empty()
 //keepCh = params.keep ? : false
 
 //outNameCh.dump(tag: "outNameCh")
@@ -207,96 +209,40 @@ log.info "======================================================="
   * SNV Benchmarking *
   ********************/
 
-// TODO: branch sample plan for bgzip
-
-// process compressVcf {
-//     label "onlyLinux"
-//     label "lowCpu"
-//     label "lowMem"
-//
-//     input:  $snvindel $truth
-//     output: $snvindel $truth
-//     script:
-//
-//     """
-//     gzip $OUTPUT_DIR/snv_indel_temp.vcf
-//     snvindel=$OUTPUT_DIR/snv_indel_temp.vcf.gz
-//
-//     gzip $OUTPUT_DIR/truth_temp.vcf
-//     truth=$OUTPUT_DIR/truth_temp.vcf.gz
-//     """
-// }
-//
-// process mergeSnvIndel {
-//     input: $snv $indel
-//     output: snvindel=$OUTPUT_DIR/"snv_indel_temp.vcf.gz"
-//     script:
-//     """
-//     bgzip -@ $CPU -c $snv > $snv".gz"
-//     bgzip -@ $CPU -c $indel > $indel".gz"
-//     snv=$snv".gz"
-//     indel=$indel".gz"
-//
-//     bcftools index --threads $CPU -f -o $snv".csi" $snv
-//     bcftools index --threads $CPU -f -o $indel".csi" $indel
-//
-//     bcftools concat -a $snv $indel -O z -o $OUTPUT_DIR/"snv_indel_temp.vcf.gz" --threads $CPU
-//     snvindel=$OUTPUT_DIR/"snv_indel_temp.vcf.gz"
-//     """
-//
-// }
-//
 annotateInputCh = snvIndelCh.combine(["snvIndel"]).mix(snvCh.combine(["snv"])).mix(indelCh.combine(["indel"])).mix(truthCh.combine(["truth"])).dump(tag:"testCh")
 
-//(annotateSnvAndIndelCh, annotateSnvIndelCh) = annotateInputCh.into(2)
-annotateSnvAndIndelCh = annotateInputCh
+//annotateSnvAndIndelCh = annotateInputCh
+//annotateSnvAndIndelCh = annotateSnvAndIndelCh.dump(tag: "annotateSnvAndIndelCh")
 
 // annotateSnameInputCh = snvIndelSnameCh.combine(["snvIndel"]).mix(snvSnameCh.combine(["snv"])).mix(indelSnameCh.combine(["indel"])).mix(truthSnvSnameCh.combine(["truth"])).dump(tag:"testSnameCh")
 
-// (annotateSnvAndIndelSnameCh, annotateSnvIndelSnameCh) = annotateSnameInputCh.into(2)
 
-renameChrCh = Channel.fromPath("assets/rename_chr.txt")
+renameChrCh = Channel.fromPath("${projectDir}/assets/rename_chr.txt")
+reheaderCh = Channel.fromPath("${projectDir}/assets/reheader.txt")
 
-//(renameChrSnvAndIndelCh, renameChrSnvIndelCh) = renameChrCh.into(2)
-renameChrSnvAndIndelCh = renameChrCh
-
-// process annotate {
-//     label "snv"
-//
-//     input:
-//     tuple file(vcf), val(annotateType) from annotateInputCh
-//     file (chrs) from renameChrCh
-//
-//     output:
-//     file("snvIndel.annotate.vcf.gz") into snvIndelAnnotateCh
-//     file("snv.annotate.vcf.gz") into snvAnnotateCh
-//     file("indel.annotate.vcf.gz") into indelAnnotateCh
-//     file("truth.annotate.vcf.gz") into truthAnnotateCh
-//
-//     script:
-//     """
-//     bcftools annotate -x INFO,^FORMAT/GT -o ${annotateType}.annotate.vcf.gz -Oz --rename-chrs rename_chr.txt ${vcf}
-//     """
-// }
-
-//annotateSnvAndIndelCh = annotateSnvAndIndelCh.dump(tag: "annotateSnvAndIndelCh")
 
 process checkSnvAndIndel {
     label "snv"
+    label "medCpu"
+    label "medMem"
 
     input:
-    tuple file(vcf), val(annotateType), file(chrs) from annotateSnvAndIndelCh.combine(renameChrSnvAndIndelCh)
+    tuple file(vcf), val(annotateType), file(chrs), file(header) from annotateInputCh.combine(renameChrCh).combine(reheaderCh)
+    //file(reheader) from reheaderCh
 
     output:
     tuple val(annotateType), file("${annotateType}.annotate.vcf.gz") into annotateCh
 
     script:
     """
-    bcftools annotate -x INFO,^FORMAT/GT -o ${annotateType}.annotate.vcf.gz -Oz --rename-chrs rename_chr.txt ${vcf}
+    NAME=`basename ${vcf} .gz`
+    cat reheader.txt > "reheader_"\$NAME
+    bcftools view ${vcf} |grep -v "##" >> "reheader_"\$NAME
+    bcftools annotate -x INFO,^FORMAT/GT -o ${annotateType}.annotate.vcf.gz -Oz --rename-chrs rename_chr.txt "reheader_"\$NAME
     """
 }
 
-//annotateCh = annotateCh.dump(tag: "annotateCh")
+annotateCh = annotateCh.dump(tag: "annotateCh")
 
 annotateCh.branch{ row ->
     snvIndelCh: row[0]=~/snvIndel/
@@ -314,6 +260,8 @@ annotateCh.branch{ row ->
 
 process concat {
     label "snv"
+    label "lowCpu"
+    label "lowMem"
 
     input:
     file(snv) from snvCheckedCh
@@ -408,33 +356,32 @@ process splitMultiSample {
 
 process filterPASS {
     label "snv"
+    label "medCpu"
+    label "lowMem"
 
     input:
     file snvIndel name "snv_indel_temp.sample.vcf.gz" from snvIndelSampleCh
     file truth name "truth_temp.sample.vcf.gz" from truthSampleCh
-    file truthSv name "truth_sv.vcf.gz" from truthSvCh
 
     output:
     file(params.noPass ? "snv_indel_temp.sample.vcf.gz" : "snv_indel.pass.vcf") into snvIndelPassCh
     file(params.noPassTruth ? "truth_temp.sample.vcf.gz":"truth_temp.pass.vcf") into truthSamplePassCh
-    file(params.noPassTruthSv ? "truth_sv.vcf.gz" :"truth_temp_sv.pass.vcf") into truthSvPassCh
 
     script:
     passSnvCmd = params.noPass ? '': "zcat ${snvIndel} | grep 'PASS\\|#' > snv_indel.pass.vcf"
     passTruthCmd = params.noPassTruth ? '': "zcat ${truth} | grep 'PASS\\|#' > truth_temp.pass.vcf"
-    passTruthSvCmd = params.noPassTruthSv ? '':"zcat ${truthSv} | grep 'PASS\\|#' > truth_temp_sv.pass.vcf"
     """
     ${passSnvCmd}
     ${passTruthCmd}
-    ${passTruthSvCmd}
     """
 }
 
 
 process PrepareAndNormalize {
-    label "medCpu"
-    label "lowMem"
     label "snv"
+    label "highCpu"
+    label "medMem"
+
 
     input:
     file(snvIndel) from snvIndelPassCh.dump(tag: "prepNormsnv")
@@ -472,8 +419,10 @@ process PrepareAndNormalize {
 
 process benchmarkSNV {
     label "snv"
+    label "medCpu"
+    label "medMem"
 
-    publishDir "${params.outDir}/SNV", mode: params.publishDirMode
+    publishDir "${params.outDir}/${params.outName}/SNV", mode: params.publishDirMode
 
     //TODO: add CPU label
     input:
@@ -499,10 +448,24 @@ process benchmarkSNV {
 /********************
  * SV Benchmarking *
  ********************/
+svSnameCh = svSnameCh.ifEmpty([])
+truthSvSnameCh = truthSvSnameCh.ifEmpty([])
+
+//(svCh,svCh2)=svCh.into(2)
+//(truthSvCh,truthSvCh2)=truthSvCh.into(2)
+//(truthSvSnameCh,truthSvSnameCh2)=truthSvSnameCh.ifEmpty([]).into(2)
+
+ //ingestSvCh =svCh.combine(svSnameCh).combine(["sv"]).mix(truthSvCh.combine(truthSvSnameCh).combine(["truth_sv"]))
+
+//ingestSvCh.dump(tag:"testCh2")
+ // snvIndelCh.combine(["snvIndel"]).mix(snvCh.combine(["snv"])).mix(indelCh.combine(["indel"])).mix(truthCh.combine(["truth"])).dump(tag:"testCh")
+
  process ingestSV {
      label "sv"
+     label "lowCpu"
+     label "lowMem"
 
-     publishDir "${params.outDir}/SV", mode: params.publishDirMode
+     publishDir "${params.outDir}/${params.outName}/SV", mode: params.publishDirMode
 
      input:
      file(sv) from svCh
@@ -520,11 +483,13 @@ process benchmarkSNV {
 
  process ingestSvTruth {
      label "sv"
+     label "lowCpu"
+     label "lowMem"
 
-     publishDir "${params.outDir}/SV", mode: params.publishDirMode
+     publishDir "${params.outDir}/${params.outName}/SV", mode: params.publishDirMode
 
      input:
-     file(truth) from truthSvPassCh
+     file(truth) from truthSvCh
      val(truthSvSname) from truthSvSnameCh
 
      output:
@@ -539,8 +504,10 @@ process benchmarkSNV {
 
  process benchmarkSV {
      label "sv"
+     label "lowCpu"
+     label "lowMem"
 
-     publishDir "${params.outDir}/SV", mode: params.publishDirMode
+     publishDir "${params.outDir}/${params.outName}/SV", mode: params.publishDirMode
 
      input:
      file(svDf) from svDf
@@ -558,8 +525,10 @@ process benchmarkSNV {
 
  process plotSNV {
      label "plots"
+     label "lowCpu"
+     label "lowMem"
 
-     publishDir "${params.outDir}/SNV", mode: params.publishDirMode
+     publishDir "${params.outDir}/${params.outName}/SNV", mode: params.publishDirMode
 
      input:
      file(statsSNV) from plotSnvCh
@@ -576,8 +545,10 @@ process benchmarkSNV {
 
  process plotSV {
      label "plots"
+     label "lowCpu"
+     label "lowMem"
 
-     publishDir "${params.outDir}/SV", mode: params.publishDirMode
+     publishDir "${params.outDir}/${params.outName}/SV", mode: params.publishDirMode
 
      input:
      file(statsSV) from plotSvCh
