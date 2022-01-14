@@ -1,26 +1,30 @@
 #!/usr/bin/env Rscript
 
 # Load libraries:
-library("tidyverse")
+# library("tidyverse")
 library("DT")
 library("optparse")
-
+library("ggplot2")
+library("dplyr")
+library("tidyr")
+library("forcats")
+library("tibble")
 
 # Setup arguments
 option_list = list(
-    make_option(c("-b", "--bsc"), type="character", default=NULL, 
+    make_option(c("-b", "--bsc"), type="character", default=NULL,
                 help="BSC snv file", metavar="character"),
-    make_option(c("-c", "--charite"), type="character", default=NULL, 
+    make_option(c("-c", "--charite"), type="character", default=NULL,
                 help="charite snv file", metavar="character"),
-    make_option(c("-d", "--curie"), type="character", default=NULL, 
+    make_option(c("-d", "--curie"), type="character", default=NULL,
                 help="curie snv file", metavar="character"),
-    make_option(c("-H", "--hartwig"), type="character", default=NULL, 
+    make_option(c("-H", "--hartwig"), type="character", default=NULL,
                 help="hartwig snv file", metavar="character"),
-    make_option(c("-O", "--oicr"), type="character", default=NULL, 
+    make_option(c("-O", "--oicr"), type="character", default=NULL,
                 help="oicr snv file", metavar="character"),
-    make_option(c("-o", "--outputDir"), type="character", default=NULL, 
+    make_option(c("-o", "--outputDir"), type="character", default=NULL,
                 help="oicr snv file", metavar="character")
-); 
+);
 
 opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
@@ -77,16 +81,16 @@ if (!is.null(opt$oicr)){
 print(snvTable)
 
 # Compute F1 + order factors
-snvTable=snvTable %>% 
-    mutate(recall = round(recall,3)) %>% 
-    mutate(precision = round(precision,3)) %>% 
-    mutate(F1 = round(2*(precision*recall)/(precision+recall),3)) %>% 
-    mutate(type=factor(type,levels=c("SNVs","indels","records"))) %>% 
+snvTable=snvTable %>%
+    mutate(recall = round(recall,3)) %>%
+    mutate(precision = round(precision,3)) %>%
+    mutate(F1 = round(2*(precision*recall)/(precision+recall),3)) %>%
+    mutate(type=factor(type,levels=c("SNVs","indels","records"))) %>%
     mutate(Node = case_when(Node == "BSC" ~ "Node 1",
                             Node == "Curie" ~ "Node 2",
                             Node == "Charite" ~ "Node 3",
                             Node == "Hartwig" ~ "Node 4",
-                            Node == "OICR" ~ "Node 5")) %>% 
+                            Node == "OICR" ~ "Node 5")) %>%
     mutate(Node=factor(Node,levels=c("Node 1", "Node 2", "Node 3", "Node 4", "Node 5")))
 
 datatable(snvTable)
@@ -95,7 +99,7 @@ write.table(snvTable,file = paste0(opt$outputDir ,"_snvTable.csv"))
 
 # Transform table + order factors
 tidySnv=snvTable %>%
-    select(-c(total.truth,total.query,precision,recall,F1)) %>% 
+    select(-c(total.truth,total.query,precision,recall,F1)) %>%
     pivot_longer(cols = c(tp,fp,fn), names_to = "metric", values_to = "count") %>%
     mutate(metric=factor(metric,levels=c("tp","fp","fn")))
 
@@ -118,7 +122,7 @@ ggsave(paste0(opt$outputDir ,"barplotTPFPFN.png"),width=30,height=20,units='cm')
 
 # Transform table for Precision recall F1 + order factors
 tidySnv=snvTable %>%
-    pivot_longer(cols = c(recall,precision,F1), names_to = "metric", values_to = "count") %>% 
+    pivot_longer(cols = c(recall,precision,F1), names_to = "metric", values_to = "count") %>%
     mutate(metric=factor(metric,levels=c("recall","precision","F1")))
 
 # Plot Precision Recall F1

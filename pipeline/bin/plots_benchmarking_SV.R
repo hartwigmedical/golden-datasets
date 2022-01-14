@@ -1,26 +1,33 @@
 #!/usr/bin/env Rscript
 
 # Load libraries:
-library("tidyverse")
+#library("tidyverse")
+library("DT")
 library("optparse")
+library("ggplot2")
+library("dplyr")
+library("tidyr")
+library("forcats")
+library("tibble")
+
 
 # Setup arguments
 option_list = list(
-  make_option(c("-b", "--bsc"), type="character", default=NULL, 
+  make_option(c("-b", "--bsc"), type="character", default=NULL,
               help="BSC SV file", metavar="character"),
-  make_option(c("-c", "--charite"), type="character", default=NULL, 
+  make_option(c("-c", "--charite"), type="character", default=NULL,
               help="charite SV file", metavar="character"),
-  make_option(c("-d", "--curie"), type="character", default=NULL, 
+  make_option(c("-d", "--curie"), type="character", default=NULL,
               help="curie SV file", metavar="character"),
-  make_option(c("-H", "--hartwig"), type="character", default=NULL, 
+  make_option(c("-H", "--hartwig"), type="character", default=NULL,
               help="hartwig SV file", metavar="character"),
-  make_option(c("-O", "--oicr"), type="character", default=NULL, 
+  make_option(c("-O", "--oicr"), type="character", default=NULL,
               help="oicr SV file", metavar="character"),
-  make_option(c("-t", "--truth"), type="character", default=NULL, 
+  make_option(c("-t", "--truth"), type="character", default=NULL,
               help="truth file", metavar="character"),
-  make_option(c("-o", "--outputDir"), type="character", default=NULL, 
+  make_option(c("-o", "--outputDir"), type="character", default=NULL,
               help="oicr SV file", metavar="character")
-); 
+);
 
 opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
@@ -41,13 +48,23 @@ if (is.null(opt$bsc) && is.null(opt$charite) && is.null(opt$curie) && is.null(op
 
 # Check if arg is present and add to svTable
 
-# bscTable=read.table("~/Documents/Tom/EUCANCan/Benchmark/TCGA/results/DO32237_curie/SV_benchmark_results.csv",header=TRUE,sep =",",stringsAsFactors = FALSE)
-# 
+#bscTable=read.table("~/Documents/Tom/EUCANCan/Benchmark/TCGA/results/DO32237_curie/SV_benchmark_results.csv",header=TRUE,sep =",",stringsAsFactors = FALSE)
+#
 # bscTable=read.table("/bioinfo/users/tgutman/Documents/Tom/EUCANCan/golden-datasets/pipeline/work/16/b93353413aff983bc6c81a9f83fdc5/SV_benchmark_results.csv",header=TRUE,sep =",",stringsAsFactors = FALSE)
-  
-# bscTable=read.table("/bioinfo/users/tgutman/Documents/Tom/EUCANCan/golden-datasets/pipeline/work/55/fa58c4372a84530d33a89a24c976da/SV_benchmark_results.csv",header=TRUE,sep =",",stringsAsFactors = FALSE)
+
+#bscTable=read.table("/bioinfo/users/tgutman/Documents/Tom/EUCANCan/Benchmark/colo829/results/CURIE/COLO829_curie_211130_nextflow/SV/SV_benchmark_results.csv",header=TRUE,sep =",",stringsAsFactors = FALSE)
+
+#truthTsv=read.table("/bioinfo/users/tgutman/Documents/Tom/EUCANCan/Benchmark/colo829/results/CURIE/COLO829_curie_211130_nextflow/SV/truth_sv_dataframe.csv",header=TRUE,stringsAsFactors = FALSE,sep=",")
+
+#svTable=read.table("/data/users/tgutman/Documents/Tom/EUCANCan/Benchmark/TCGA/results/hartwig_curie_bsc_svsvTable.csv",header = TRUE,stringsAsFactors = FALSE)
+
+#truthTsv=read.table("/data/users/tgutman/Documents/Tom/EUCANCan/Benchmark/TCGA/results/DO32237_bsc/truth_sv_dataframe.csv",header=TRUE,stringsAsFactors = FALSE,sep=",")
 
 svTable=data.frame()
+
+#bscTable$Center="BSC"
+#colnames(bscTable)[1]="Bin"
+#svTable=rbind(svTable,bscTable[-c(4,8,12,16,20),])
 
 if (!is.null(opt$bsc)){
   bscTable = read.table(opt$bsc, header=TRUE, sep =",",stringsAsFactors = FALSE)
@@ -88,35 +105,37 @@ if (!is.null(opt$oicr)){
 truthTsv=read.table(opt$truth,header=TRUE,stringsAsFactors = FALSE,sep=",")
 
 # Transform svTable: anonymize, change bin name
-svTable=svTable %>% 
+svTable=svTable %>%
   mutate(Center = case_when(Center == "BSC" ~ "Node 1",
                             Center == "Curie" ~ "Node 2",
                             Center == "Charite" ~ "Node 3",
                             Center == "Hartwig" ~ "Node 4",
-                            Center == "OICR" ~ "Node 5")) %>% 
-  mutate(Center=factor(Center,levels=c("Node 1", "Node 2", "Node 3", "Node 4","Node 5"))) %>% 
+                            Center == "OICR" ~ "Node 5")) %>%
+  mutate(Center=factor(Center,levels=c("Node 1", "Node 2", "Node 3", "Node 4","Node 5"))) %>%
   mutate(Bin = case_when(Bin == "All results" ~ "All",
                          Bin == "Bin 0-50 bp" ~ "0-50",
                          Bin == "Bin 50-200 bp" ~ "50-200",
                          Bin == "Bin 200-1000 bp" ~ "200-1000",
                          Bin == "Bin 1000-100000000000000000000000000000 bp" ~ "> 1000",
-                         Bin == "Bin NaN bp" ~ "NaN"))
+                         Bin == "Bin NaN bp" ~ "NaN")) %>%
+  mutate(across(TP:TP_BND,as.numeric)) %>%
+  mutate(Counts = TP + FP + FN)
 
-write.table(svTable,file = paste0(opt$outputDir ,"svTable.csv"),row.names = FALSE)
+
+write.table(svTable,file = paste0(opt$outputDir ,"_svTable.csv"),row.names = FALSE)
 
 print("svTable:")
 print(svTable,row.names = FALSE)
 
 # Transform svTable and extract only useful info
-tidySV=svTable %>% 
-  filter(Bin != "All" & TIER == "tier3") %>% 
-  select(Bin,Center,starts_with("TP") & - "TP") %>% 
+tidySV=svTable %>%
+  filter(Bin != "All" & TIER == "tier3") %>%
+  select(Bin,Center,starts_with("TP")& -"TP") %>%
   mutate(Bin = case_when(Bin == "NaN" ~ "NaN",
                          Bin == "0-50" ~ "0-50",
                          Bin == "50-200" ~ "50-200",
                          Bin == "200-1000" ~ "200-1000",
-                         Bin == "> 1000" ~ "> 1000")) %>% 
-  mutate(TP_DEL=as.numeric(TP_DEL),TP_INS=as.numeric(TP_INS),TP_DUP=as.numeric(TP_DUP),TP_INV=as.numeric(TP_INV),TP_BND=as.numeric(TP_BND))
+                         Bin == "> 1000" ~ "> 1000"))
 
 colnames(tidySV)=c("Bin","Center","DEL","INS","DUP","INV","BND")
 
@@ -124,9 +143,9 @@ print("truth")
 print(head(truthTsv))
 
 # Transform Truth Table
-truthTsv= truthTsv %>% 
-  mutate(ID=paste(start_chrom,start,sep = "_")) %>% 
-  select(ID,type,length) %>% 
+truthTsv= truthTsv %>%
+  mutate(ID=paste(start_chrom,start,sep = "_")) %>%
+  select(ID,type,length) %>%
   mutate(bin = case_when(length == 0 | length == 1 | length == NA | type == "BND" ~ "NaN",
                          length > 1 & length <= 50 ~ "0-50",
                          length > 50 & length <= 200 ~ "50-200",
@@ -142,11 +161,11 @@ print(truthTsv)
 # Count the number of TP of each category and put everything together
 
 SV_count=t(table(truthTsv$type,truthTsv$bin))
-SV_count = as.data.frame.matrix(SV_count) %>% 
-  rownames_to_column() %>% 
+SV_count = as.data.frame.matrix(SV_count) %>%
+  rownames_to_column() %>%
   dplyr::rename(Bin = rowname) %>%
-  mutate(Center="Truth") %>% 
-  select(Bin,Center,DEL,INS,DUP,INV,BND) %>% 
+  mutate(Center="Truth") %>%
+  select(Bin,Center,DEL,INS,DUP,INV,BND) %>%
   bind_rows(tidySV)
 
 SV_count$Bin=fct_relevel(as.factor(SV_count$Bin), "0-50", "50-200","200-1000","> 1000","NaN")
@@ -154,12 +173,19 @@ SV_count$Bin=fct_relevel(as.factor(SV_count$Bin), "0-50", "50-200","200-1000",">
 print("General matrix")
 print(SV_count)
 
-# Plot general metrics:
-## Plot TP FP FN raw 
+# the truth dataset is composed of
+nrow(truthTsv)
+# Variants and the distribution of SV type is the following:
+table(truthTsv$type)
+# With more details:
+filter(SV_count,Center=="Truth") %>%  select(-Center)
 
-tidySvTP=svTable %>% 
-  filter(Bin == "All" & TIER == "tier3") %>% 
-  select(-c("FP_original", "FP_tier", "Recall", "Precision", "F1.score", "TP_DEL", "TP_INS", "TP_DUP", "TP_INV", "TP_BND")) %>% 
+# Plot general metrics:
+## Plot TP FP FN raw
+
+tidySvTP=svTable %>%
+  filter(Bin == "All" & TIER == "tier3") %>%
+  select(-c("FP_original", "FP_tier", "Recall", "Precision", "F1.score", "TP_DEL", "TP_INS", "TP_DUP", "TP_INV", "TP_BND")) %>%
   pivot_longer(cols=c(TP,FP,FN), names_to="metric",values_to="count")
 
 ggplot(tidySvTP,aes(x= Center,y=as.numeric(count),fill=metric)) +
@@ -174,13 +200,13 @@ ggplot(tidySvTP,aes(x= Center,y=as.numeric(count),fill=metric)) +
         plot.title = element_text(size=22),
         legend.key.size = unit(1.5,"line"))
 
-ggsave(paste0(opt$outputDir ,"barplot_SV_general_tier3_all.png"),width=30,height=20,units='cm')
+ggsave(paste0(opt$outputDir ,"_barplot_SV_general_tier3_all.png"),width=30,height=20,units='cm')
 
 ## Plot TP FP FN by SV type
 
-tidySvTP_all=svTable %>% 
-  filter(Bin == "All" & TIER == "tier3") %>% 
-  select(Bin,Center,starts_with("TP")) %>% 
+tidySvTP_all=svTable %>%
+  filter(Bin == "All" & TIER == "tier3") %>%
+  select(Bin,Center,starts_with("TP")) %>%
   pivot_longer(cols=starts_with("TP"),names_to = "metric",values_to = "count")
 
 ggplot(tidySvTP_all,aes(x= Center,y=as.numeric(count),fill=metric)) +
@@ -195,12 +221,12 @@ ggplot(tidySvTP_all,aes(x= Center,y=as.numeric(count),fill=metric)) +
         plot.title = element_text(size=22),
         legend.key.size = unit(1.5,"line"))
 
-ggsave(paste0(opt$outputDir ,"barplot_SV_TP_tier3_all.png"),width=30,height=20,units='cm')
+ggsave(paste0(opt$outputDir ,"_barplot_SV_TP_tier3_all.png"),width=30,height=20,units='cm')
 
 ## Plot Precision Recall & F1 score
-tidySvF1=svTable %>% 
-  filter(Bin == "All" & TIER == "tier3") %>% 
-  select(-c(TIER,FP,FP_original,FP_tier,FN,TP_DEL,TP_INS,TP_DUP,TP_INV,TP_BND )) %>% 
+tidySvF1=svTable %>%
+  filter(Bin == "All" & TIER == "tier3") %>%
+  select(-c(TIER,FP,FP_original,FP_tier,FN,TP_DEL,TP_INS,TP_DUP,TP_INV,TP_BND )) %>%
   pivot_longer(cols = c(Recall,Precision,F1.score), names_to = "metric", values_to = "count") %>% mutate(count=as.numeric(count),TP=as.numeric(TP))
 
 
@@ -218,11 +244,11 @@ ggplot(tidySvF1,aes(x= Center,y=count*100,fill=metric)) +
         plot.title = element_text(size=22),
         legend.key.size = unit(1.5,"line"))
 
-ggsave(paste0(opt$outputDir ,"barplot_SV_F1_tier3_all.png"),width=30,height=20,units='cm')
+ggsave(paste0(opt$outputDir ,"_barplot_SV_F1_tier3_all.png"),width=30,height=20,units='cm')
 
 ## Compare to truth:
 
-tidySV_count=SV_count %>% 
+tidySV_count=SV_count %>%
   pivot_longer(cols=c(DEL,INS,DUP,INV,BND),names_to = "type",values_to="count")
 
 ggplot(tidySV_count,aes(x=Bin,y=count,fill=Center)) +
@@ -237,7 +263,7 @@ ggplot(tidySV_count,aes(x=Bin,y=count,fill=Center)) +
         plot.title = element_text(size=22),
         legend.key.size = unit(1.5,"line"))
 
-ggsave(paste0(opt$outputDir ,"barplot_SV_truth_types.png"),width=30,height=20,units='cm')
+ggsave(paste0(opt$outputDir ,"_barplot_SV_truth_types.png"),width=30,height=20,units='cm')
 
 ggplot(mapping = aes(x=Bin,y=count,fill=Center)) +
   geom_bar(data=tidySV_count[which(tidySV_count$Center != "Truth"),],stat="identity",position="dodge") +
@@ -254,4 +280,109 @@ ggplot(mapping = aes(x=Bin,y=count,fill=Center)) +
         strip.text.x = element_text(size = 14),
         legend.key.size = unit(1.5,"line"))
 
-ggsave(paste0(opt$outputDir ,"barplot_SV_truth_types.png"),width=30,height=20,units='cm')
+ggsave(paste0(opt$outputDir ,"_barplot_SV_truth_types.png"),width=30,height=20,units='cm')
+
+# Plots Counts per bin size:
+svTable$Center=as.character(svTable$Center)
+svTable$Bin=factor(svTable$Bin,levels=c("All","0-50","50-200","200-1000","> 1000","NaN"))
+
+SV_count_full= svTable %>%
+  mutate(Counts = TP + FP + FN) %>%
+  select(Center,Bin,Counts) %>%
+  distinct() %>%
+  filter(!Bin=="All")
+
+theme_gg=theme_bw() +
+  theme(
+    legend.title = element_text(size = 18),
+    legend.text = element_text(size = 16),
+    axis.text=element_text(size=12),
+    axis.title=element_text(size=14,face="bold"),
+    plot.title = element_text(size=22),
+    legend.key.size = unit(3,"line")
+  )
+
+ggplot(SV_count_full,aes(x=Bin,y=Counts,group = Center,color=Center)) +
+  geom_point() +
+  geom_line() +
+  ggtitle("Total Number of SV Calls as a function of the SV bin size") +
+  scale_color_brewer(palette="Set1") +
+  theme_gg
+
+ggsave(paste0(opt$outputDir ,"_counts_bin_SV.png"),width=30,height=20,units='cm')
+
+# Plots TP per bin size:
+SV_TP_full= svTable %>%
+  filter(TIER=="tier3") %>%
+  select(Center,Bin,TP,FP,Recall,Precision,F1.score) %>%
+  distinct() %>%
+  filter(!Bin=="All")
+
+ggplot(SV_TP_full,aes(x=Bin,y=TP,group = Center,color=Center)) +
+  geom_line() +
+  geom_point() +
+  ggtitle("Number of true positive SV Calls as a function of the SV bin size") +
+  scale_color_brewer(palette="Set1") +
+  theme_gg
+
+ggsave(paste0(opt$outputDir ,"_TP_bin_SV.png"),width=30,height=20,units='cm')
+
+# Plots FP per bin size:
+
+ggplot(SV_TP_full,aes(x=Bin,y=FP,group = Center,color=Center)) +
+  geom_line() +
+  geom_point() +
+  ggtitle("Number of false positive SV Calls as a function of the SV bin size") +
+  scale_color_brewer(palette="Set1") +
+  theme_gg
+
+ggsave(paste0(opt$outputDir ,"_FP_bin_SV.png"),width=30,height=20,units='cm')
+
+# Plots Precision per bin size:
+
+ggplot(SV_TP_full,aes(x=Bin,y=Precision,group = Center,color=Center)) +
+  geom_line() +
+  geom_point() +
+  ggtitle("Precision as a function of the SV bin size") +
+  scale_color_brewer(palette="Set1") +
+  theme_gg
+
+ggsave(paste0(opt$outputDir ,"_Precision_bin_SV.png"),width=30,height=20,units='cm')
+
+# Plots Recall per bin size:
+
+ggplot(SV_TP_full,aes(x=Bin,y=Recall,group = Center,color=Center)) +
+  geom_line() +
+  geom_point() +
+  ggtitle("Recall as a function of the SV bin size") +
+  scale_color_brewer(palette="Set1") +
+  theme_gg
+
+ggsave(paste0(opt$outputDir ,"_Recall_bin_SV.png"),width=30,height=20,units='cm')
+
+# Plots F1 per bin size:
+
+ggplot(SV_TP_full,aes(x=Bin,y=F1.score,group = Center,color=Center)) +
+  geom_line() +
+  geom_point() +
+  ggtitle("F1 score as a function of the SV bin size") +
+  scale_color_brewer(palette="Set1") +
+  theme_gg
+
+ggsave(paste0(opt$outputDir ,"_F1_bin_SV.png"),width=30,height=20,units='cm')
+
+# Plot Recall vs Precsion:
+SV_rec_prec_full= svTable %>%
+  filter(TIER=="tier3") %>%
+  select(Center,Bin,Precision,Recall) %>%
+  distinct() %>%
+  filter(Bin=="All")
+
+ggplot(SV_rec_prec_full,aes(x=Precision,y=Recall,group = Center)) +
+  geom_line() +
+  geom_point(aes(color=Center)) +
+  ggtitle("Recall as a function of Precision") +
+  scale_color_brewer(palette="Set1") +
+  theme_gg
+
+ggsave(paste0(opt$outputDir ,"_Recall_Precision_SV.png"),width=30,height=20,units='cm')
