@@ -97,6 +97,12 @@
 ##FILTER=<ID=min_tumor_qual,Description="Insufficient tumor quality">
 ##FILTER=<ID=min_tumor_vaf,Description="Insufficient tumor VAF">
 ##FILTER=<ID=PON,Description="site found in panel of normals">
+##FILTER=<ID=NORMALEVIDENCE,Description="test">
+##FILTER=<ID=GERMLINE,Description="test">
+##FILTER=<ID=LOWDEPTH,Description="test">
+##FILTER=<ID=NOTSEEN,Description="test">
+##FILTER=<ID=NOTSEEN;NORMALEVIDENCE,Description="test">
+##FILTER=<ID=STRANDBIAS,Description="test">
 ##INFO=<ID=MQ_str,Number=1,Type=Float,Description="RMS Mapping Quality. From strelka">
 ##INFO=<ID=MQ0_str,Number=1,Type=Integer,Description="Total Mapping Quality Zero Reads. From strelka">
 ##INFO=<ID=SomaticEVS_str,Number=1,Type=Float,Description="Somatic Empirical Variant Score (EVS) expressing the phred-scaled probability of the call being a false positive observation.. From strelka">
@@ -213,6 +219,15 @@
 ##INFO=<ID=SUBCL,Number=1,Type=Float,Description="Non-zero subclonal likelihood">
 ##INFO=<ID=TIER,Number=1,Type=String,Description="Tier: [HOTSPOT, PANEL, HIGH_CONFIDENCE, LOW_CONFIDENCE]">
 ##INFO=<ID=TNC,Number=1,Type=String,Description="Tri-nucleotide context">
+##INFO=<ID=Callers,Number=1,Type=String,Description="Test">
+##INFO=<ID=NormalEvidenceReads,Number=1,Type=String,Description="Test">
+##INFO=<ID=NormalReads,Number=1,Type=String,Description="Test">
+##INFO=<ID=TumourEvidenceReads,Number=1,Type=String,Description="Test">
+##INFO=<ID=TumourReads,Number=1,Type=String,Description="Test">
+##INFO=<ID=3pContext,Number=1,Type=String,Description="Test">
+##INFO=<ID=5pContext,Number=1,Type=String,Description="Test">
+##INFO=<ID=RepeatRefCount,Number=1,Type=String,Description="Test">
+##INFO=<ID=RepeatUnit,Number=1,Type=String,Description="Test">
 ##contig=<ID=1,length=249250621>
 ##contig=<ID=2,length=243199373>
 ##contig=<ID=3,length=198022430>
