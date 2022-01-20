@@ -57,7 +57,7 @@ def calculate_results(comparison_df, false_negative_df, false_positive_df):
 
     if not comparison_df.empty:
         '''
-        TIER 1: Start pos within 200bp, Length ratio within 20%, End pos within 200bp,
+        TIER 1: Start pos + end pos within 5bp, Length ratio within 20%
         '''
         def conditions_tier1(s):
             pos_thres = 5
@@ -69,7 +69,7 @@ def calculate_results(comparison_df, false_negative_df, false_positive_df):
         comparison_df['tier1'] = comparison_df.apply(conditions_tier1, axis=1)
 
         '''
-        TIER 2: Start pos within 400bp, Length ratio within 20%,  End pos within 400bp
+        TIER 2: Start pos + end pos within 15bp, Length ratio within 20%
         '''
         def conditions_tier2(s):
             pos_thres = 15
@@ -82,7 +82,7 @@ def calculate_results(comparison_df, false_negative_df, false_positive_df):
 
 
         '''
-        TIER 3: Start pos within 600bp, Length ratio within 30%
+        TIER 3: Length ratio within 30%
         '''
         def conditions_tier3(s):
             pos_thres = 0
@@ -268,14 +268,14 @@ def main():
     sv_comp_list = []
     sv_fp_list = []
     columns_sv_comp_list = ['same_chrom_start', 'same_chrom_end', 'var_in_truth_within_window', 'diff_start_pos', 'diff_end_pos', 'diff_length', 'length_truth', 'norm_start_pos', 'norm_end_pos', 'length_ratio', 'type_truth', 'type_test', 'match_type', 'bin0_200', 'bin200_1000', 'bin1000', 'dup_truth', 'index_test', 'index_truth']   #'index_test', 'index_truth'
-    window = 1000
+    window = 1000 #Assumption 1
     # For each row in the test file:
     for index, row in node.iterrows():
         #print(row)
-        # Check if there is a variant in truth that matches start_chr and end_chr and start position within 1kb
+        # Check if there is a variant in truth that matches start_chr and end_chr and start position within 'window'
         truth_matches = ""
         truth_matches = truth.loc[(truth['start_chrom'] == row['start_chrom']) & (truth['end_chrom'] == row['end_chrom']) \
-                                  & (abs(truth['start'] - row['start']) <  window)]
+                                  & (abs(truth['start'] - row['start']) <=  window)]
 
         if not truth_matches.empty:
             #print("[DEBUG] Match found.")
@@ -295,20 +295,20 @@ def main():
                 if not best:
                     best = [j, truth_match.tolist(), results]
                 else:
-                    #evaluate if this entry is better: DEFINITION: start site diff is smallest
+                    #Evaluate if this entry is better: DEFINITION: start site diff is smallest #Assumption 2
                     #print("[DEBUG] do we have a better result?")
                     #print(best)
                     #print(results)
                     # Here we should evaluate which match is best
-                    if abs(results[3]) == abs(best[2][3]):
-                        if abs(results[4]) < abs(best[2][4]):
+                    if abs(results[3]) == abs(best[2][3]): # If diff start position equals the best item so far
+                        if abs(results[4]) < abs(best[2][4]):  # Same with end position
                             print("[DEBUG] NEW BEST RESULT 1")
                             best = [j, truth_match.tolist(), results]
                     elif abs(results[3]) < abs(best[2][3]): # Start position should be smallest, but what do we do if this is the same?
                         print("[DEBUG] NEW BEST RESULT 2")
                         best = [j, truth_match.tolist(), results]
             sv_comp_list.append(best[2] + [index, best[0]])
-            truth.loc[truth_matches.loc[best[0],:].name,'times_checked'] += 1 #UPDATE
+            truth.loc[truth_matches.loc[best[0],:].name,'times_checked'] += 1 #UPDATE #Assumption 3
             #print(truth_matched_df)
         else:
             #print(row)
@@ -339,7 +339,7 @@ def main():
     #sv_comp_df = evaluate_tier1(sv_comp_df)
 
     # Deal with the duplicate matches to TRUTH
-    sv_comp_df, fp = deal_with_dup_truths(sv_comp_df, truth, node)
+    sv_comp_df, fp = deal_with_dup_truths(sv_comp_df, truth, node) #Assumption 4
     # Remove the duplicates with largest distance and add them to the false positive list
     to_add_to_fp = node.iloc[fp]
     sv_fp_df = pd.concat([sv_fp_df, to_add_to_fp], sort=False).sort_index()
